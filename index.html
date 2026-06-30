@@ -1030,25 +1030,21 @@ function renderJudgeView(judgeNum, lockedCategory){
   const cfg = CATEGORY_LABELS[lockedCategory];
   const dist = judgeNum===1 ? cfg.d1 : cfg.d2;
 
-  return `
-    <div class="section">
-      <div class="info-note">
-        Merekod jarak <b>Jarak Sasaran ${judgeNum} (${dist} m)</b> bagi kategori <b>${cfg.name}</b>. Tanda "Dalam Zon" jika roket jatuh dalam bulatan sasaran, atau "Luar Zon" jika jatuh di luar.
-      </div>
+  const teamOptions = state.teams.map(t=>{
+    const hasData = !!state.targetData[teamKey(lockedCategory, t.id, dist)];
+    const sel = selectedTeamId===t.id ? 'selected' : '';
+    return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
+  }).join('');
 
-      <div class="section-title">Pilih Sekolah</div>
-      ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi admin/Hakim Utama untuk daftar sekolah dahulu.</div>' : `
-      <select class="team-select" id="team-select">
-        <option value="">— Pilih sekolah —</option>
-        ${state.teams.map(t=>{
-          const hasData = !!state.targetData[teamKey(lockedCategory, t.id, dist)];
-          return `<option value="${t.id}" ${selectedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}${hasData?' ✓':''}</option>`;
-        }).join('')}
-      </select>`}
-
-      <div id="entry-area"></div>
-    </div>
-  `;
+  return '<div class="section">'
+    + '<div class="info-note">Merekod jarak <b>Jarak Sasaran '+judgeNum+' ('+dist+' m)</b> bagi kategori <b>'+cfg.name+'</b>. '
+    + 'Tanda <b>Dalam Zon</b> jika roket jatuh dalam bulatan sasaran, atau <b>Luar Zon</b> jika jatuh di luar.</div>'
+    + '<div class="section-title">Pilih Sekolah</div>'
+    + (state.teams.length===0
+        ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi Admin untuk daftar sekolah dahulu.</div>'
+        : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
+    + '<div id="entry-area"></div>'
+    + '</div>';
 }
 
 function bindJudgeView(dist){
@@ -1060,11 +1056,14 @@ function bindJudgeView(dist){
       selectedTeamId = select.value || null;
       renderEntryArea(dist, lockedCategory);
     });
-  }
-  if(selectedTeamId && state.teams.find(t=>t.id===selectedTeamId)){
-    renderEntryArea(dist, lockedCategory);
+    // If a team was already selected (e.g. after Firebase re-attach), restore the entry form
+    if(selectedTeamId){
+      select.value = selectedTeamId;
+      renderEntryArea(dist, lockedCategory);
+    }
   }
 }
+
 
 function renderEntryArea(dist, lockedCategory){
   const area = document.getElementById('entry-area');
