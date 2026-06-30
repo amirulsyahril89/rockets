@@ -351,7 +351,7 @@ const FIREBASE_CONFIG = {
   measurementId: "G-FJDZPKNRQ8"
 };
 
-const ADMIN_EMAILS = ["g-41275961@moe-dl.edu.my", "amirsyah.1989@gmail.com"];
+const ADMIN_EMAILS = ["amirsyah.1989@gmail.com"];
 function isAdminEmail(email){ return ADMIN_EMAILS.includes(email); }
 
 let dbRef = null;
@@ -1036,12 +1036,27 @@ function renderJudgeView(judgeNum, lockedCategory){
     return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
   }).join('');
 
+  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi Admin untuk daftar sekolah dahulu.</div>';
+
+  if(judgeSubView==='payload'){
+    return '<div class="section">'
+      + '<div class="seg-control" id="judge-tab-seg">'
+      + '<button class="seg-btn" data-jtab="target">Sasaran ('+dist+'m)</button>'
+      + '<button class="seg-btn active" data-jtab="payload">Payung Terjun</button>'
+      + '</div>'
+      + renderPayloadEntry()
+      + '</div>';
+  }
+
   return '<div class="section">'
+    + '<div class="seg-control" id="judge-tab-seg">'
+    + '<button class="seg-btn active" data-jtab="target">Sasaran ('+dist+'m)</button>'
+    + '<button class="seg-btn" data-jtab="payload">Payung Terjun</button>'
+    + '</div>'
     + '<div class="info-note">Merekod jarak <b>Jarak Sasaran '+judgeNum+' ('+dist+' m)</b> bagi kategori <b>'+cfg.name+'</b>. '
     + 'Tanda <b>Dalam Zon</b> jika roket jatuh dalam bulatan sasaran, atau <b>Luar Zon</b> jika jatuh di luar.</div>'
     + '<div class="section-title">Pilih Sekolah</div>'
-    + (state.teams.length===0
-        ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi Admin untuk daftar sekolah dahulu.</div>'
+    + (state.teams.length===0 ? noTeams
         : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
     + '<div id="entry-area"></div>'
     + '</div>';
@@ -1050,19 +1065,36 @@ function renderJudgeView(judgeNum, lockedCategory){
 function bindJudgeView(dist){
   const judgeInfo = parseJudgeRole(state.role);
   const lockedCategory = judgeInfo ? judgeInfo.category : state.category;
+
+  // Tab switching
+  document.querySelectorAll('[data-jtab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      judgeSubView = btn.dataset.jtab;
+      selectedTeamId = null;
+      payloadSelectedTeamId = null;
+      render();
+    });
+  });
+
+  if(judgeSubView==='payload'){
+    bindPayloadEntry();
+    return;
+  }
+
+  // Target entry
   const select = document.getElementById('team-select');
   if(select){
     select.addEventListener('change', ()=>{
       selectedTeamId = select.value || null;
       renderEntryArea(dist, lockedCategory);
     });
-    // If a team was already selected (e.g. after Firebase re-attach), restore the entry form
     if(selectedTeamId){
       select.value = selectedTeamId;
       renderEntryArea(dist, lockedCategory);
     }
   }
 }
+
 
 
 function renderEntryArea(dist, lockedCategory){
@@ -1169,9 +1201,10 @@ function bindTeamManager(){
 /* ====================== MAIN VIEW (Hakim Utama) ====================== */
 
 function renderMainView(){
+  const isAdmin = state.role==='admin';
   return `
     <div class="section">
-      ${state.role==='admin' ? `
+      ${isAdmin ? `
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
         <button class="icon-btn" id="back-to-admin">← Balik ke Panel Admin</button>
       </div>` : ''}
@@ -1184,7 +1217,7 @@ function renderMainView(){
       <div class="seg-control" id="view-seg">
         <button class="seg-btn ${mainSubView==='overview'?'active':''}" data-view="overview">Ringkasan</button>
         <button class="seg-btn ${mainSubView==='target'?'active':''}" data-view="target">Sasaran</button>
-        <button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>
+        ${!isAdmin ? `<button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>` : `<button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>`}
         <button class="seg-btn ${mainSubView==='final'?'active':''}" data-view="final">Keputusan Akhir</button>
       </div>
 
@@ -1198,11 +1231,12 @@ function renderMainView(){
 }
 
 let mainSubView = 'overview';
+let judgeSubView = 'target'; // 'target' | 'payload'
 
 function renderMainSubView(){
   if(mainSubView==='overview') return renderOverview();
   if(mainSubView==='target') return renderTargetDetail();
-  if(mainSubView==='payload') return renderPayloadEntry();
+  if(mainSubView==='payload') return state.role==='admin' ? renderPayloadReadOnly() : renderPayloadEntry();
   if(mainSubView==='final') return renderFinalStandings();
   return '';
 }
@@ -1223,7 +1257,8 @@ function bindMainView(){
     adminDashboardMode = false;
     render();
   });
-  if(mainSubView==='payload') bindPayloadEntry();
+  // Only Hakim Utama (not admin) can enter payload data
+  if(mainSubView==='payload' && state.role==='main') bindPayloadEntry();
 }
 
 function renderOverview(){
@@ -1311,7 +1346,7 @@ function renderPayloadEntry(){
   const rows = computePayloadRanking(state.category);
 
   return `
-    <div class="info-note">Hakim Utama merekod keputusan kategori Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod terbaik (masa terpanjang) akan digunakan.</div>
+    <div class="info-note">Rekod Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod terbaik (masa terpanjang) akan digunakan.</div>
 
     <div class="section-title">Pilih Sekolah</div>
     ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi admin untuk daftar sekolah dahulu.</div>' : `
@@ -1417,6 +1452,32 @@ function renderPayloadEntryArea(){
   });
 }
 
+function renderPayloadReadOnly(){
+  const rows = computePayloadRanking(state.category);
+  return `
+    <div class="info-note">Paparan baca sahaja. Hanya Hakim Utama yang boleh merekod data Payung Terjun Berbeban.</div>
+    ${rows.length===0
+      ? '<div class="empty-state">Belum ada rekod payung terjun dimasukkan.</div>'
+      : `<div class="table-wrap">
+          <table>
+            <thead><tr><th>Kedudukan</th><th>Sekolah</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
+            <tbody>
+              ${rows.map(r=>`
+                <tr>
+                  <td class="rank-cell ${r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':''}">${r.rank}</td>
+                  <td>${escapeHtml(r.teamName)}</td>
+                  <td>${r.data.time}</td>
+                  <td>${r.timeMark}</td>
+                  <td>${r.condMark}</td>
+                  <td>${r.zoneMark}</td>
+                  <td class="mark-cell">${r.total}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`}
+  `;
+}
+
 function bindPayloadEntry(){
   const select = document.getElementById('payload-team-select');
   if(select){
@@ -1459,6 +1520,11 @@ function renderFinalStandings(){
 
 /* ====================== INIT / AUTH STATE LISTENER ====================== */
 
+function syncCategoryFromRole(role){
+  const judgeInfo = parseJudgeRole(role);
+  if(judgeInfo) state.category = judgeInfo.category;
+}
+
 function handleAuthenticatedUser(user){
   currentUser = { uid:user.uid, email:user.email, displayName:user.displayName, photoURL:user.photoURL };
 
@@ -1475,6 +1541,7 @@ function handleAuthenticatedUser(user){
     const approved = snap.val();
     if(approved && approved.role){
       state.role = approved.role;
+      syncCategoryFromRole(state.role);
       state.phase = 'app';
       attachListeners(render);
       render();
@@ -1487,6 +1554,7 @@ function handleAuthenticatedUser(user){
         const v = s.val();
         if(v && v.role && state.phase === 'waiting-approval'){
           state.role = v.role;
+          syncCategoryFromRole(state.role);
           state.phase = 'app';
           attachListeners(render);
           render();
