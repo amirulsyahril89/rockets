@@ -266,6 +266,15 @@
   }
   .add-team-btn:hover{background:#2c58c0;}
 
+  .team-select{
+    width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--border-light);
+    background:var(--panel);color:var(--text);font-size:15px;font-weight:600;margin-bottom:14px;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6573' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;background-position:right 14px center;
+  }
+  .team-select:focus{outline:none;border-color:var(--blue);}
+
   .toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     background:var(--text);color:#fff;
@@ -391,14 +400,14 @@ let state = {
 
 let isSyncing = false;
 let selectedTeamId = null;
-let payloadFormFocused = false;
+let payloadSelectedTeamId = null;
 
 function isEntryFormOpen(){
   if(state.role==='judge1' || state.role==='judge2'){
     return !!selectedTeamId;
   }
-  if(state.role==='main'){
-    return payloadFormFocused;
+  if(state.role==='main' || state.role==='admin'){
+    return !!payloadSelectedTeamId;
   }
   return false;
 }
@@ -462,11 +471,22 @@ function computeOverallTargetScore(category){
   return { ranked: withScore, unranked: withoutScore };
 }
 
+function getBestPayloadAttempt(entry){
+  if(!entry) return null;
+  const a1 = entry.attempt1, a2 = entry.attempt2;
+  const valid = [a1,a2].filter(a => a && a.time !== '' && a.time !== null && a.time !== undefined);
+  if(valid.length===0) return null;
+  // Longest airtime wins (best record), matching the target rocket "best of 2" rule
+  valid.sort((x,y)=> parseFloat(y.time) - parseFloat(x.time));
+  return valid[0];
+}
+
 function computePayloadRanking(category){
   const rows = state.teams.map(t=>{
-    const d = state.payloadData[payloadKey(category, t.id)];
-    return { teamId:t.id, teamName:t.name, data:d };
-  }).filter(r=> r.data && r.data.time !== '' && r.data.time !== null && r.data.time !== undefined);
+    const entry = state.payloadData[payloadKey(category, t.id)];
+    const best = getBestPayloadAttempt(entry);
+    return { teamId:t.id, teamName:t.name, data:best };
+  }).filter(r=> r.data !== null);
 
   rows.sort((a,b)=> parseFloat(b.data.time) - parseFloat(a.data.time));
 
@@ -586,7 +606,7 @@ function attachListeners(onUpdate){
   dbRef.ref(TEAMS_PATH).on('value', snap=>{
     const val = snap.val();
     state.teams = val ? Object.values(val) : [];
-    onUpdate();
+    if(!isEntryFormOpen()) onUpdate();
   });
 
   dbRef.ref(TARGET_PATH).on('value', snap=>{
@@ -854,7 +874,42 @@ function renderAdminView(){
           `;}).join('')}
       </div>
 
-      <div class="section-title">Pengurusan pasukan & papan markah</div>
+      <div class="section-title">Pendaftaran Sekolah & Peserta (${state.teams.length})</div>
+      <div class="info-note">Daftar sekolah dan nama 2 peserta setiap pasukan di sini. Senarai ini dikongsi dengan semua hakim secara automatik.</div>
+      <div class="card">
+        <div class="form-row">
+          <label class="form-label">Nama Sekolah / Negeri</label>
+          <input type="text" class="add-team-input" id="adm-school-name" placeholder="Contoh: SK Bohor Baharu">
+        </div>
+        <div class="input-group">
+          <div class="input-wrap">
+            <label class="form-label" style="margin-bottom:6px;">Peserta 1</label>
+            <input type="text" class="add-team-input" id="adm-participant1" placeholder="Nama peserta 1">
+          </div>
+          <div class="input-wrap">
+            <label class="form-label" style="margin-bottom:6px;">Peserta 2</label>
+            <input type="text" class="add-team-input" id="adm-participant2" placeholder="Nama peserta 2">
+          </div>
+        </div>
+        <button class="save-btn" id="adm-add-team-btn">Daftar Pasukan</button>
+        <div class="save-confirm" id="adm-add-team-confirm"></div>
+      </div>
+
+      ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan.</div>' :
+        state.teams.map(t=>`
+          <div class="pending-card" data-team-row="${t.id}">
+            <div>
+              <div class="pending-name">${escapeHtml(t.name)}</div>
+              <div class="pending-email">${t.peserta1 ? escapeHtml(t.peserta1) : '<span class="muted">Peserta 1 belum diisi</span>'} &nbsp;•&nbsp; ${t.peserta2 ? escapeHtml(t.peserta2) : '<span class="muted">Peserta 2 belum diisi</span>'}</div>
+            </div>
+            <div class="role-assign-row">
+              <button class="assign-btn" data-edit-team="${t.id}">Edit</button>
+              <button class="assign-btn assign-deny" data-delete-team="${t.id}">Buang</button>
+            </div>
+          </div>
+        `).join('')}
+
+      <div class="section-title">Pengurusan papan markah</div>
       <div class="info-note">Sebagai admin, anda juga boleh lihat papan markah penuh seperti Hakim Utama.</div>
       <button class="save-btn" id="admin-view-dashboard" style="background:var(--green);">Lihat Papan Markah Penuh</button>
     </div>
@@ -887,6 +942,65 @@ function bindAdminView(){
     adminDashboardMode = true;
     render();
   });
+
+  const addTeamBtn = document.getElementById('adm-add-team-btn');
+  if(addTeamBtn) addTeamBtn.addEventListener('click', async ()=>{
+    const nameInput = document.getElementById('adm-school-name');
+    const p1Input = document.getElementById('adm-participant1');
+    const p2Input = document.getElementById('adm-participant2');
+    const name = nameInput.value.trim();
+    const peserta1 = p1Input.value.trim();
+    const peserta2 = p2Input.value.trim();
+    if(!name){
+      nameInput.focus();
+      return;
+    }
+    const id = 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    state.teams.push({id, name, peserta1, peserta2});
+    await saveTeams();
+    nameInput.value=''; p1Input.value=''; p2Input.value='';
+    const confirmEl = document.getElementById('adm-add-team-confirm');
+    if(confirmEl){
+      confirmEl.textContent = 'Pasukan "'+name+'" didaftarkan ✓';
+      confirmEl.style.color = 'var(--green-text)';
+    }
+    showToast('Pasukan "'+name+'" didaftarkan');
+    render();
+  });
+
+  document.querySelectorAll('[data-edit-team]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const teamId = btn.dataset.editTeam;
+      const team = state.teams.find(t=>t.id===teamId);
+      if(!team) return;
+      const newName = prompt('Nama sekolah:', team.name);
+      if(newName===null) return;
+      const newP1 = prompt('Peserta 1:', team.peserta1||'');
+      if(newP1===null) return;
+      const newP2 = prompt('Peserta 2:', team.peserta2||'');
+      if(newP2===null) return;
+      team.name = newName.trim() || team.name;
+      team.peserta1 = newP1.trim();
+      team.peserta2 = newP2.trim();
+      await saveTeams();
+      showToast('Maklumat pasukan dikemaskini');
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-delete-team]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const teamId = btn.dataset.deleteTeam;
+      const team = state.teams.find(t=>t.id===teamId);
+      if(!team) return;
+      if(confirm('Buang pasukan "'+team.name+'"? Semua rekod markah pasukan ini akan kekal dalam data tetapi pasukan tidak akan dipaparkan lagi.')){
+        state.teams = state.teams.filter(t=>t.id!==teamId);
+        await saveTeams();
+        showToast('Pasukan dibuang');
+        render();
+      }
+    });
+  });
 }
 
 let adminDashboardMode = false;
@@ -908,16 +1022,15 @@ function renderJudgeView(judgeNum){
         Merekod jarak <b>Jarak Sasaran ${judgeNum} (${dist} m)</b> bagi kategori ${cfg.name}. Tanda "Dalam Zon" jika roket jatuh dalam bulatan sasaran, atau "Luar Zon" jika jatuh di luar.
       </div>
 
-      ${renderTeamManager()}
-
-      <div class="section-title">Pilih Pasukan (Negeri)</div>
-      <div class="team-grid" id="team-grid">
-        ${state.teams.length===0 ? '<div class="empty-state" style="width:100%">Belum ada pasukan ditambah. Sila tambah pasukan di atas.</div>' :
-          state.teams.map(t=>{
-            const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
-            return `<button class="team-chip ${hasData?'has-data':''}" data-team="${t.id}">${escapeHtml(t.name)}</button>`;
-          }).join('')}
-      </div>
+      <div class="section-title">Pilih Sekolah</div>
+      ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi admin/Hakim Utama untuk daftar sekolah dahulu.</div>' : `
+      <select class="team-select" id="team-select">
+        <option value="">— Pilih sekolah —</option>
+        ${state.teams.map(t=>{
+          const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
+          return `<option value="${t.id}" ${selectedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}${hasData?' ✓':''}</option>`;
+        }).join('')}
+      </select>`}
 
       <div id="entry-area"></div>
     </div>
@@ -932,18 +1045,14 @@ function bindJudgeView(dist){
       render();
     });
   });
-  bindTeamManager();
-  document.querySelectorAll('#team-grid .team-chip').forEach(chip=>{
-    chip.addEventListener('click', ()=>{
-      selectedTeamId = chip.dataset.team;
-      document.querySelectorAll('#team-grid .team-chip').forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
+  const select = document.getElementById('team-select');
+  if(select){
+    select.addEventListener('change', ()=>{
+      selectedTeamId = select.value || null;
       renderEntryArea(dist);
     });
-  });
+  }
   if(selectedTeamId && state.teams.find(t=>t.id===selectedTeamId)){
-    const chip = document.querySelector(`#team-grid .team-chip[data-team="${selectedTeamId}"]`);
-    if(chip) chip.classList.add('active');
     renderEntryArea(dist);
   }
 }
@@ -1001,9 +1110,9 @@ function renderEntryArea(dist){
     await saveTargetEntry(key, localEntry);
     document.getElementById('save-confirm').textContent = 'Disimpan ✓';
     setTimeout(()=>{ const c = document.getElementById('save-confirm'); if(c) c.textContent=''; }, 1500);
-    // refresh has-data marker
-    const chip = document.querySelector(`#team-grid .team-chip[data-team="${selectedTeamId}"]`);
-    if(chip) chip.classList.add('has-data');
+    // mark the selected dropdown option as having data
+    const opt = document.querySelector(`#team-select option[value="${selectedTeamId}"]`);
+    if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
   });
 }
 
@@ -1184,48 +1293,25 @@ function renderPayloadEntry(){
   const rows = computePayloadRanking(state.category);
 
   return `
-    <div class="info-note">Hakim Utama merekod keputusan kategori Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%).</div>
+    <div class="info-note">Hakim Utama merekod keputusan kategori Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod terbaik (masa terpanjang) akan digunakan.</div>
 
-    ${renderTeamManager()}
+    <div class="section-title">Pilih Sekolah</div>
+    ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi admin untuk daftar sekolah dahulu.</div>' : `
+    <select class="team-select" id="payload-team-select">
+      <option value="">— Pilih sekolah —</option>
+      ${state.teams.map(t=>{
+        const hasData = !!state.payloadData[payloadKey(state.category, t.id)];
+        return `<option value="${t.id}" ${payloadSelectedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}${hasData?' ✓':''}</option>`;
+      }).join('')}
+    </select>`}
 
-    <div class="section-title">Rekod pelancaran (${cfg.name})</div>
-    ${state.teams.length===0 ? '<div class="empty-state">Belum ada pasukan ditambah.</div>' : state.teams.map(t=>{
-      const key = payloadKey(state.category, t.id);
-      const d = state.payloadData[key] || {time:'', condition:'baik', zone:'in'};
-      return `
-        <div class="card">
-          <div class="attempt-head" style="margin-bottom:10px;">${escapeHtml(t.name)}</div>
-          <div class="input-group">
-            <div class="input-wrap">
-              <label>Masa di udara (saat)</label>
-              <input type="number" inputmode="decimal" step="0.1" min="0" class="num-input" id="pl-time-${t.id}" value="${d.time}" placeholder="0.0">
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
-            <div class="cond-grid">
-              <button class="cond-btn ${d.condition==='baik'?'active':''}" data-team="${t.id}" data-field="condition" data-val="baik">Baik</button>
-              <button class="cond-btn bad ${d.condition==='rosak'?'active':''}" data-team="${t.id}" data-field="condition" data-val="rosak">Rosak / Pecah</button>
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">Zon pendaratan</label>
-            <div class="zone-grid">
-              <button class="cond-btn ${d.zone==='in'?'active':''}" data-team="${t.id}" data-field="zone" data-val="in">Dalam Zon</button>
-              <button class="cond-btn bad ${d.zone==='out'?'active':''}" data-team="${t.id}" data-field="zone" data-val="out">Luar Zon</button>
-            </div>
-          </div>
-          <button class="save-btn" data-save-payload="${t.id}">Simpan rekod</button>
-          <div class="save-confirm" id="pl-confirm-${t.id}"></div>
-        </div>
-      `;
-    }).join('')}
+    <div id="payload-entry-area"></div>
 
     ${rows.length>0 ? `
     <div class="section-title">Kedudukan kategori payung terjun berbeban</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Masa (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
+        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
         <tbody>
           ${rows.map(r=>`
             <tr>
@@ -1244,37 +1330,86 @@ function renderPayloadEntry(){
   `;
 }
 
-function bindPayloadEntry(){
-  bindTeamManager();
-  document.querySelectorAll('[id^="pl-time-"]').forEach(input=>{
-    input.addEventListener('focus', ()=>{ payloadFormFocused = true; });
-    input.addEventListener('blur', ()=>{ payloadFormFocused = false; });
-  });
-  document.querySelectorAll('.cond-btn').forEach(btn=>{
+function renderPayloadEntryArea(){
+  const area = document.getElementById('payload-entry-area');
+  if(!area) return;
+  if(!payloadSelectedTeamId){ area.innerHTML=''; return; }
+  const team = state.teams.find(t=>t.id===payloadSelectedTeamId);
+  if(!team){ area.innerHTML=''; return; }
+  const key = payloadKey(state.category, payloadSelectedTeamId);
+  const entry = state.payloadData[key] || { attempt1:{time:'',condition:'baik',zone:'in'}, attempt2:{time:'',condition:'baik',zone:'in'} };
+
+  area.innerHTML = `
+    <div class="section-title">${escapeHtml(team.name)} — Payung Terjun Berbeban</div>
+    <div class="card">
+      ${[1,2].map(n=>{
+        const a = entry['attempt'+n] || {time:'',condition:'baik',zone:'in'};
+        return `
+        <div class="attempt-block">
+          <div class="attempt-head">Pelancaran ${n}</div>
+          <div class="input-group">
+            <div class="input-wrap">
+              <label>Masa di udara (saat)</label>
+              <input type="number" inputmode="decimal" step="0.1" min="0" class="num-input" id="pl-time-${n}" value="${a.time}" placeholder="0.0">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
+            <div class="cond-grid">
+              <button class="cond-btn ${a.condition==='baik'?'active':''}" data-attempt="${n}" data-field="condition" data-val="baik">Baik</button>
+              <button class="cond-btn bad ${a.condition==='rosak'?'active':''}" data-attempt="${n}" data-field="condition" data-val="rosak">Rosak / Pecah</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Zon pendaratan</label>
+            <div class="zone-grid">
+              <button class="cond-btn ${a.zone==='in'?'active':''}" data-attempt="${n}" data-field="zone" data-val="in">Dalam Zon</button>
+              <button class="cond-btn bad ${a.zone==='out'?'active':''}" data-attempt="${n}" data-field="zone" data-val="out">Luar Zon</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="save-btn" id="payload-save-entry">Simpan rekod</button>
+      <div class="save-confirm" id="payload-save-confirm"></div>
+    </div>
+  `;
+
+  let localEntry = JSON.parse(JSON.stringify(entry));
+
+  document.querySelectorAll('#payload-entry-area .cond-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const teamId = btn.dataset.team, field = btn.dataset.field, val = btn.dataset.val;
-      document.querySelectorAll(`.cond-btn[data-team="${teamId}"][data-field="${field}"]`).forEach(b=>b.classList.remove('active'));
+      const n = btn.dataset.attempt, field = btn.dataset.field, val = btn.dataset.val;
+      localEntry['attempt'+n][field] = val;
+      document.querySelectorAll(`#payload-entry-area .cond-btn[data-attempt="${n}"][data-field="${field}"]`).forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
-  document.querySelectorAll('[data-save-payload]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const teamId = btn.dataset.savePayload;
-      const time = document.getElementById('pl-time-'+teamId).value;
-      const condBtn = document.querySelector(`.cond-btn[data-team="${teamId}"][data-field="condition"].active`);
-      const zoneBtn = document.querySelector(`.cond-btn[data-team="${teamId}"][data-field="zone"].active`);
-      const key = payloadKey(state.category, teamId);
-      const entry = {
-        time: time,
-        condition: condBtn ? condBtn.dataset.val : 'baik',
-        zone: zoneBtn ? zoneBtn.dataset.val : 'in'
-      };
-      state.payloadData[key] = entry;
-      await savePayloadEntry(key, entry);
-      const c = document.getElementById('pl-confirm-'+teamId);
-      if(c){ c.textContent='Disimpan ✓'; setTimeout(()=>{ if(c) c.textContent=''; }, 1500); }
+
+  document.getElementById('payload-save-entry').addEventListener('click', async ()=>{
+    [1,2].forEach(n=>{
+      const timeVal = document.getElementById('pl-time-'+n).value;
+      localEntry['attempt'+n].time = timeVal;
     });
+    state.payloadData[key] = localEntry;
+    await savePayloadEntry(key, localEntry);
+    document.getElementById('payload-save-confirm').textContent = 'Disimpan ✓';
+    setTimeout(()=>{ const c = document.getElementById('payload-save-confirm'); if(c) c.textContent=''; }, 1500);
+    const opt = document.querySelector(`#payload-team-select option[value="${payloadSelectedTeamId}"]`);
+    if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
   });
+}
+
+function bindPayloadEntry(){
+  const select = document.getElementById('payload-team-select');
+  if(select){
+    select.addEventListener('change', ()=>{
+      payloadSelectedTeamId = select.value || null;
+      renderPayloadEntryArea();
+    });
+  }
+  if(payloadSelectedTeamId && state.teams.find(t=>t.id===payloadSelectedTeamId)){
+    renderPayloadEntryArea();
+  }
 }
 
 function renderFinalStandings(){
@@ -1368,3 +1503,4 @@ function handleAuthenticatedUser(user){
 </script>
 </body>
 </html>
+
