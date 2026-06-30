@@ -385,11 +385,27 @@ const CATEGORY_LABELS = {
   SM: { name: "Sekolah Menengah", d1: 70, d2: 80 }
 };
 
+const ROLE_LABELS = {
+  judge1_SR: 'Hakim Sasaran 1 (Rendah)',
+  judge1_SM: 'Hakim Sasaran 1 (Menengah)',
+  judge2_SR: 'Hakim Sasaran 2 (Rendah)',
+  judge2_SM: 'Hakim Sasaran 2 (Menengah)',
+  main: 'Hakim Utama',
+  admin: 'Admin'
+};
+
+// Returns the judge number (1 or 2) and locked category (SR/SM) for a judge role, or null if not a judge role
+function parseJudgeRole(role){
+  const m = /^judge([12])_(SR|SM)$/.exec(role || '');
+  if(!m) return null;
+  return { judgeNum: parseInt(m[1], 10), category: m[2] };
+}
+
 /* ====================== STATE ====================== */
 
 let state = {
   phase: 'loading', // 'loading' | 'login' | 'waiting-approval' | 'app'
-  role: null, // 'judge1' | 'judge2' | 'main' | 'admin'
+  role: null, // 'judge1_SR' | 'judge1_SM' | 'judge2_SR' | 'judge2_SM' | 'main' | 'admin'
   category: 'SR',
   teams: [],
   targetData: {},
@@ -403,7 +419,7 @@ let selectedTeamId = null;
 let payloadSelectedTeamId = null;
 
 function isEntryFormOpen(){
-  if(state.role==='judge1' || state.role==='judge2'){
+  if(parseJudgeRole(state.role)){
     return !!selectedTeamId;
   }
   if(state.role==='main' || state.role==='admin'){
@@ -727,8 +743,11 @@ function render(){
   // phase === 'app'
   app.innerHTML = renderTopbar() + renderBody() + renderFooter();
   bindGlobal();
-  if(state.role==='judge1') bindJudgeView(CATEGORY_LABELS[state.category].d1);
-  if(state.role==='judge2') bindJudgeView(CATEGORY_LABELS[state.category].d2);
+  const judgeInfo = parseJudgeRole(state.role);
+  if(judgeInfo){
+    const dist = judgeInfo.judgeNum===1 ? CATEGORY_LABELS[judgeInfo.category].d1 : CATEGORY_LABELS[judgeInfo.category].d2;
+    bindJudgeView(dist);
+  }
   if(state.role==='main') bindMainView();
   if(state.role==='admin'){
     if(adminDashboardMode) bindMainView();
@@ -788,9 +807,8 @@ function bindWaitingScreen(){
 }
 
 function renderTopbar(){
-  const roleLabels = { judge1:'Hakim Sasaran 1', judge2:'Hakim Sasaran 2', main:'Hakim Utama', admin:'Admin' };
-  const roleClasses = { judge1:'r1', judge2:'r2', main:'rm', admin:'radm' };
-  const roleLabel = roleLabels[state.role] || '';
+  const roleClasses = { judge1_SR:'r1', judge1_SM:'r1', judge2_SR:'r2', judge2_SM:'r2', main:'rm', admin:'radm' };
+  const roleLabel = ROLE_LABELS[state.role] || '';
   const roleClass = roleClasses[state.role] || '';
   return `
     <div class="topbar">
@@ -818,8 +836,8 @@ function bindGlobal(){
 }
 
 function renderBody(){
-  if(state.role==='judge1') return renderJudgeView(1);
-  if(state.role==='judge2') return renderJudgeView(2);
+  const judgeInfo = parseJudgeRole(state.role);
+  if(judgeInfo) return renderJudgeView(judgeInfo.judgeNum, judgeInfo.category);
   if(state.role==='main') return renderMainView();
   if(state.role==='admin') return adminDashboardMode ? renderMainView() : renderAdminView();
   return '';
@@ -848,8 +866,10 @@ function renderAdminView(){
             </div>
             <div class="role-assign-row">
               <button class="assign-btn assign-rm" data-uid="${uid}" data-role="main">Hakim Utama</button>
-              <button class="assign-btn assign-r1" data-uid="${uid}" data-role="judge1">Hakim Sasaran 1</button>
-              <button class="assign-btn assign-r2" data-uid="${uid}" data-role="judge2">Hakim Sasaran 2</button>
+              <button class="assign-btn assign-r1" data-uid="${uid}" data-role="judge1_SR">Hakim Sasaran 1 (Rendah)</button>
+              <button class="assign-btn assign-r1" data-uid="${uid}" data-role="judge1_SM">Hakim Sasaran 1 (Menengah)</button>
+              <button class="assign-btn assign-r2" data-uid="${uid}" data-role="judge2_SR">Hakim Sasaran 2 (Rendah)</button>
+              <button class="assign-btn assign-r2" data-uid="${uid}" data-role="judge2_SM">Hakim Sasaran 2 (Menengah)</button>
               <button class="assign-btn assign-deny" data-uid="${uid}" data-role="deny">Tolak</button>
             </div>
           </div>
@@ -859,14 +879,13 @@ function renderAdminView(){
       <div class="card">
         ${approvedList.length===0 ? '<div class="empty-state">Belum ada hakim dilantik.</div>' :
           approvedList.map(([uid, u])=>{
-            const roleLabels = { judge1:'Hakim Sasaran 1', judge2:'Hakim Sasaran 2', main:'Hakim Utama' };
             return `
             <div class="assigned-user-row">
               <div class="pending-user">
                 ${avatarHtml(u, 32)}
                 <div>
                   <div class="pending-name">${escapeHtml(u.displayName||u.email)}</div>
-                  <div class="pending-email">${escapeHtml(u.email)} — ${roleLabels[u.role]||u.role}</div>
+                  <div class="pending-email">${escapeHtml(u.email)} — ${ROLE_LABELS[u.role]||u.role}</div>
                 </div>
               </div>
               <button class="remove-link" data-remove-uid="${uid}">Buang akses</button>
@@ -1007,19 +1026,14 @@ let adminDashboardMode = false;
 
 /* ====================== JUDGE VIEW (Sasaran 1 / Sasaran 2) ====================== */
 
-function renderJudgeView(judgeNum){
-  const cfg = CATEGORY_LABELS[state.category];
+function renderJudgeView(judgeNum, lockedCategory){
+  const cfg = CATEGORY_LABELS[lockedCategory];
   const dist = judgeNum===1 ? cfg.d1 : cfg.d2;
 
   return `
     <div class="section">
-      <div class="seg-control" id="cat-seg">
-        <button class="seg-btn ${state.category==='SR'?'active':''}" data-cat="SR">Sekolah Rendah</button>
-        <button class="seg-btn ${state.category==='SM'?'active':''}" data-cat="SM">Sekolah Menengah</button>
-      </div>
-
       <div class="info-note">
-        Merekod jarak <b>Jarak Sasaran ${judgeNum} (${dist} m)</b> bagi kategori ${cfg.name}. Tanda "Dalam Zon" jika roket jatuh dalam bulatan sasaran, atau "Luar Zon" jika jatuh di luar.
+        Merekod jarak <b>Jarak Sasaran ${judgeNum} (${dist} m)</b> bagi kategori <b>${cfg.name}</b>. Tanda "Dalam Zon" jika roket jatuh dalam bulatan sasaran, atau "Luar Zon" jika jatuh di luar.
       </div>
 
       <div class="section-title">Pilih Sekolah</div>
@@ -1027,7 +1041,7 @@ function renderJudgeView(judgeNum){
       <select class="team-select" id="team-select">
         <option value="">— Pilih sekolah —</option>
         ${state.teams.map(t=>{
-          const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
+          const hasData = !!state.targetData[teamKey(lockedCategory, t.id, dist)];
           return `<option value="${t.id}" ${selectedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}${hasData?' ✓':''}</option>`;
         }).join('')}
       </select>`}
@@ -1038,34 +1052,37 @@ function renderJudgeView(judgeNum){
 }
 
 function bindJudgeView(dist){
-  document.querySelectorAll('#cat-seg .seg-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.category = btn.dataset.cat;
-      selectedTeamId = null;
-      render();
-    });
-  });
+  const judgeInfo = parseJudgeRole(state.role);
+  const lockedCategory = judgeInfo ? judgeInfo.category : state.category;
   const select = document.getElementById('team-select');
   if(select){
     select.addEventListener('change', ()=>{
       selectedTeamId = select.value || null;
-      renderEntryArea(dist);
+      renderEntryArea(dist, lockedCategory);
     });
   }
   if(selectedTeamId && state.teams.find(t=>t.id===selectedTeamId)){
-    renderEntryArea(dist);
+    renderEntryArea(dist, lockedCategory);
   }
 }
 
-function renderEntryArea(dist){
+function renderEntryArea(dist, lockedCategory){
   const area = document.getElementById('entry-area');
+  if(!area) return;
   if(!selectedTeamId){ area.innerHTML=''; return; }
   const team = state.teams.find(t=>t.id===selectedTeamId);
-  const key = teamKey(state.category, selectedTeamId, dist);
+  if(!team){ area.innerHTML=''; return; }
+  const key = teamKey(lockedCategory, selectedTeamId, dist);
   const entry = state.targetData[key] || { attempt1:{distance:'',zone:'in'}, attempt2:{distance:'',zone:'in'} };
+
+  const pesertaHtml = (team.peserta1||team.peserta2) ? `
+    <div class="info-note" style="margin-bottom:12px;">
+      👤 ${escapeHtml(team.peserta1||'—')} &nbsp;|&nbsp; 👤 ${escapeHtml(team.peserta2||'—')}
+    </div>` : '';
 
   area.innerHTML = `
     <div class="section-title">${escapeHtml(team.name)} — Jarak ${dist} m</div>
+    ${pesertaHtml}
     <div class="card">
       ${[1,2].map(n=>{
         const a = entry['attempt'+n] || {distance:'',zone:'in'};
@@ -1075,42 +1092,44 @@ function renderEntryArea(dist){
           <div class="input-group">
             <div class="input-wrap">
               <label>Jarak dari sasaran (m)</label>
-              <input type="number" inputmode="decimal" step="0.01" min="0" class="num-input" id="dist-${n}" value="${a.distance}" placeholder="0.00">
+              <input type="number" inputmode="decimal" step="0.01" min="0"
+                class="num-input" id="entry-dist-${n}"
+                value="${a.distance}" placeholder="0.00">
             </div>
           </div>
           <div class="zone-toggle">
-            <button class="zone-btn zone-in ${a.zone==='in'?'active':''}" data-attempt="${n}" data-zone="in">Dalam Zon</button>
-            <button class="zone-btn zone-out ${a.zone==='out'?'active':''}" data-attempt="${n}" data-zone="out">Luar Zon</button>
+            <button class="zone-btn zone-in ${a.zone==='in'?'active':''}"
+              data-ea="${n}" data-ez="in">Dalam Zon</button>
+            <button class="zone-btn zone-out ${a.zone==='out'?'active':''}"
+              data-ea="${n}" data-ez="out">Luar Zon</button>
           </div>
         </div>`;
       }).join('')}
-      <button class="save-btn" id="save-entry">Simpan rekod</button>
-      <div class="save-confirm" id="save-confirm"></div>
+      <button class="save-btn" id="entry-save-btn">Simpan rekod</button>
+      <div class="save-confirm" id="entry-save-confirm"></div>
     </div>
   `;
 
   let localEntry = JSON.parse(JSON.stringify(entry));
 
-  document.querySelectorAll('.zone-btn').forEach(btn=>{
+  area.querySelectorAll('[data-ez]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const n = btn.dataset.attempt;
-      const zone = btn.dataset.zone;
+      const n = btn.dataset.ea, zone = btn.dataset.ez;
       localEntry['attempt'+n].zone = zone;
-      document.querySelectorAll(`.zone-btn[data-attempt="${n}"]`).forEach(b=>b.classList.remove('active'));
+      area.querySelectorAll(`[data-ea="${n}"][data-ez]`).forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
 
-  document.getElementById('save-entry').addEventListener('click', async ()=>{
+  document.getElementById('entry-save-btn').addEventListener('click', async ()=>{
     [1,2].forEach(n=>{
-      const distVal = document.getElementById('dist-'+n).value;
-      localEntry['attempt'+n].distance = distVal;
+      const input = document.getElementById('entry-dist-'+n);
+      if(input) localEntry['attempt'+n].distance = input.value;
     });
     state.targetData[key] = localEntry;
     await saveTargetEntry(key, localEntry);
-    document.getElementById('save-confirm').textContent = 'Disimpan ✓';
-    setTimeout(()=>{ const c = document.getElementById('save-confirm'); if(c) c.textContent=''; }, 1500);
-    // mark the selected dropdown option as having data
+    const c = document.getElementById('entry-save-confirm');
+    if(c){ c.textContent='Disimpan ✓'; setTimeout(()=>{ if(c) c.textContent=''; }, 1500); }
     const opt = document.querySelector(`#team-select option[value="${selectedTeamId}"]`);
     if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
   });
