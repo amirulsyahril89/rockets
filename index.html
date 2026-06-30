@@ -710,7 +710,10 @@ function render(){
   if(state.role==='judge1') bindJudgeView(CATEGORY_LABELS[state.category].d1);
   if(state.role==='judge2') bindJudgeView(CATEGORY_LABELS[state.category].d2);
   if(state.role==='main') bindMainView();
-  if(state.role==='admin') bindAdminView();
+  if(state.role==='admin'){
+    if(adminDashboardMode) bindMainView();
+    else bindAdminView();
+  }
 }
 
 function renderLoginScreen(){
