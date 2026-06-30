@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Rocket Challenge — Sistem Markah</title>
+<style>
+  :root{
+    --bg:#0f1720;
+    --panel:#16212c;
+    --panel2:#1c2a37;
+    --border:#2a3a48;
+    --border-light:#3a4d5e;
+    --text:#eef3f7;
+    --text-dim:#9fb1c0;
+    --text-faint:#6b7d8c;
+    --green:#1fae6b;
+    --green-dim:#164d33;
+    --amber:#e8a23a;
+    --amber-dim:#5c4419;
+    --red:#e25555;
+    --red-dim:#5c2424;
+    --blue:#3f8de0;
+    --blue-dim:#1d3a55;
+    --radius:10px;
+    --radius-lg:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{font-family:inherit;}
+  input,select{font-family:inherit;}
+
+  #app{max-width:1100px;margin:0 auto;padding:0 0 80px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:50;
+  }
+  .topbar-left{display:flex;align-items:center;gap:10px;}
+  .topbar-title{font-size:15px;font-weight:700;letter-spacing:0.2px;}
+  .topbar-sub{font-size:11px;color:var(--text-dim);}
+  .role-badge{
+    font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;
+    background:var(--panel2);border:1px solid var(--border-light);color:var(--text-dim);
+  }
+  .role-badge.r1{color:var(--blue);border-color:var(--blue);}
+  .role-badge.r2{color:var(--amber);border-color:var(--amber);}
+  .role-badge.rm{color:var(--green);border-color:var(--green);}
+  .switch-role{
+    background:none;border:1px solid var(--border-light);color:var(--text-dim);
+    font-size:11px;padding:6px 10px;border-radius:8px;cursor:pointer;
+  }
+  .switch-role:active{transform:scale(0.96);}
+
+  .sync-pill{
+    display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);
+  }
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  /* ---------- role select screen ---------- */
+  .role-select{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:90vh;padding:24px;gap:14px;
+  }
+  .role-select h1{font-size:20px;margin:0 0 4px;text-align:center;}
+  .role-select p{color:var(--text-dim);font-size:13px;margin:0 0 18px;text-align:center;max-width:340px;}
+  .role-card{
+    width:100%;max-width:380px;
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;
+    text-align:left;
+  }
+  .role-card:active{transform:scale(0.98);}
+  .role-icon{
+    width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:700;flex-shrink:0;
+  }
+  .role-icon.r1{background:var(--blue-dim);color:var(--blue);}
+  .role-icon.r2{background:var(--amber-dim);color:var(--amber);}
+  .role-icon.rm{background:var(--green-dim);color:var(--green);}
+  .role-card-title{font-size:15px;font-weight:700;margin:0 0 2px;}
+  .role-card-desc{font-size:12px;color:var(--text-dim);margin:0;}
+
+  /* ---------- section layout ---------- */
+  .section{padding:16px;}
+  .section-title{font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin:18px 0 10px;}
+  .section-title:first-child{margin-top:4px;}
+
+  .seg-control{
+    display:flex;background:var(--panel2);border-radius:10px;padding:3px;gap:3px;margin-bottom:14px;
+  }
+  .seg-btn{
+    flex:1;text-align:center;padding:9px 6px;border-radius:8px;font-size:13px;font-weight:600;
+    background:transparent;border:none;color:var(--text-dim);cursor:pointer;
+  }
+  .seg-btn.active{background:var(--panel);color:var(--text);}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:14px 16px;margin-bottom:12px;
+  }
+
+  /* ---------- entry form (judge view) ---------- */
+  .form-row{margin-bottom:14px;}
+  .form-label{font-size:12px;color:var(--text-dim);margin-bottom:6px;display:block;font-weight:600;}
+  .team-select{
+    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border-light);
+    background:var(--panel2);color:var(--text);font-size:15px;font-weight:600;appearance:none;
+  }
+  .team-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .team-chip{
+    padding:9px 14px;border-radius:20px;border:1px solid var(--border-light);background:var(--panel2);
+    color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .team-chip.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue);}
+  .team-chip.has-data::after{content:" ✓";}
+
+  .attempt-block{
+    border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;
+    background:var(--panel2);
+  }
+  .attempt-head{font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;}
+  .input-group{display:flex;gap:10px;margin-bottom:10px;}
+  .input-wrap{flex:1;}
+  .input-wrap label{font-size:11px;color:var(--text-faint);display:block;margin-bottom:4px;}
+  .num-input{
+    width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border-light);
+    background:var(--panel);color:var(--text);font-size:16px;font-weight:600;
+  }
+  .num-input:focus{outline:none;border-color:var(--blue);}
+  .zone-toggle{display:flex;gap:8px;}
+  .zone-btn{
+    flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-light);background:var(--panel);
+    color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;text-align:center;
+  }
+  .zone-btn.zone-in.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .zone-btn.zone-out.active{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+
+  .best-indicator{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 12px;border-radius:8px;background:var(--green-dim);border:1px solid var(--green);
+    margin-top:4px;
+  }
+  .best-indicator.out{background:var(--amber-dim);border-color:var(--amber);}
+  .best-indicator-label{font-size:11px;color:var(--text-dim);}
+  .best-indicator-val{font-size:18px;font-weight:700;color:var(--green);}
+  .best-indicator.out .best-indicator-val{color:var(--amber);}
+
+  .save-btn{
+    width:100%;padding:14px;border-radius:10px;border:none;background:var(--blue);color:#fff;
+    font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;
+  }
+  .save-btn:active{transform:scale(0.98);}
+  .save-confirm{
+    text-align:center;font-size:12px;color:var(--green);margin-top:8px;height:16px;
+  }
+
+  /* ---------- payload entry ---------- */
+  .time-input-wrap{display:flex;gap:8px;align-items:center;}
+  .cond-grid{display:flex;gap:8px;}
+  .cond-btn{
+    flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-light);background:var(--panel);
+    color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;text-align:center;
+  }
+  .cond-btn.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .cond-btn.bad.active{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+  .zone-grid{display:flex;gap:8px;}
+
+  /* ---------- dashboard tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.3px;
+    padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);}
+  .table-wrap table{min-width:560px;}
+  .badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;}
+  .badge.in{background:var(--green-dim);color:var(--green);}
+  .badge.out{background:var(--amber-dim);color:var(--amber);}
+  .badge.none{background:var(--panel2);color:var(--text-faint);}
+  .rank-cell{font-weight:700;}
+  .rank-1{color:#ffd24d;}
+  .rank-2{color:#c7c7c7;}
+  .rank-3{color:#cd9456;}
+  .mark-cell{font-weight:700;color:var(--text);}
+  .muted{color:var(--text-faint);}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--text-faint);font-size:13px;
+  }
+
+  .stat-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .stat-card{
+    flex:1;min-width:100px;background:var(--panel2);border-radius:var(--radius);padding:12px 14px;
+  }
+  .stat-card-label{font-size:11px;color:var(--text-faint);margin-bottom:4px;}
+  .stat-card-val{font-size:20px;font-weight:700;}
+
+  .add-team-row{display:flex;gap:8px;margin-bottom:14px;}
+  .add-team-input{
+    flex:1;padding:11px 12px;border-radius:8px;border:1px solid var(--border-light);
+    background:var(--panel2);color:var(--text);font-size:14px;
+  }
+  .add-team-btn{
+    padding:11px 18px;border-radius:8px;border:none;background:var(--blue);color:#fff;
+    font-weight:700;font-size:14px;cursor:pointer;
+  }
+  .remove-team-btn{
+    background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;padding:4px 8px;
+  }
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--panel2);border:1px solid var(--border-light);color:var(--text);
+    padding:10px 18px;border-radius:30px;font-size:13px;font-weight:600;z-index:200;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .refresh-btn{
+    background:none;border:1px solid var(--border-light);color:var(--text-dim);
+    padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  .refresh-btn:active{transform:scale(0.96);}
+
+  .info-note{
+    font-size:11px;color:var(--text-faint);background:var(--panel2);border-radius:8px;
+    padding:10px 12px;margin-bottom:14px;line-height:1.5;
+  }
+
+  .loading-screen{
+    display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--text-dim);font-size:13px;
+  }
+
+  /* ---------- setup screen ---------- */
+  .setup-screen{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;gap:14px;
+  }
+  .setup-box{
+    width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;
+  }
+  .setup-box h1{font-size:18px;margin:0 0 8px;}
+  .setup-box p{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 14px;}
+  .setup-box ol{font-size:13px;color:var(--text-dim);line-height:1.8;margin:0 0 16px;padding-left:20px;}
+  .setup-box a{color:var(--blue);}
+  .setup-textarea{
+    width:100%;min-height:110px;padding:12px;border-radius:8px;border:1px solid var(--border-light);
+    background:var(--panel2);color:var(--text);font-size:13px;font-family:monospace;margin-bottom:12px;
+    resize:vertical;
+  }
+  .setup-error{color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px;}
+
+  ::-webkit-scrollbar{height:6px;width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading-screen">Memuatkan...</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ====================== FIREBASE SETUP ====================== */
+
+const FIREBASE_CONFIG_KEY = 'wrc_firebase_config';
+let firebaseApp = null;
+let dbRef = null;
+let firebaseReady = false;
+
+function getSavedConfig(){
+  try{
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function saveConfig(cfg){
+  localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function clearConfig(){
+  localStorage.removeItem(FIREBASE_CONFIG_KEY);
+}
+
+async function initFirebase(config){
+  if(typeof firebase === 'undefined'){
+    console.error('Firebase SDK belum dimuat');
+    firebaseReady = false;
+    return false;
+  }
+  try{
+    // Delete existing app first (async) to allow fresh init
+    if(firebase.apps.length){
+      try{ await firebase.app().delete(); }catch(e){}
+    }
+    firebaseApp = firebase.initializeApp(config);
+    dbRef = firebase.database();
+    firebaseReady = true;
+    return true;
+  }catch(e){
+    console.error('Firebase init error', e.code, e.message);
+    firebaseReady = false;
+    return false;
+  }
+}
+
+/* ====================== CONFIG / CONSTANTS ====================== */
+
+const RANK_MARKS = [60,56,52,48,44,40,36,32,28,24,20,16,12,8,4,2];
+function markForRank(rank){ return rank>=1 && rank<=RANK_MARKS.length ? RANK_MARKS[rank-1] : 0; }
+
+const PAYLOAD_TIME_MARKS = [25,20,16,13,11,10,9,8,7,6,5,4,3,2,1,1];
+function payloadMarkForRank(rank){ return rank>=1 && rank<=PAYLOAD_TIME_MARKS.length ? PAYLOAD_TIME_MARKS[rank-1] : 0; }
+
+const CATEGORY_LABELS = {
+  SR: { name: "Sekolah Rendah", d1: 60, d2: 70 },
+  SM: { name: "Sekolah Menengah", d1: 70, d2: 80 }
+};
+
+/* ====================== STATE ====================== */
+
+let state = {
+  phase: 'loading', // 'setup' | 'role-select' | 'app'
+  role: null, // 'judge1' | 'judge2' | 'main'
+  category: 'SR', // SR or SM, for judge views
+  teams: [], // {id, name}
+  targetData: {}, // key: `${category}_${teamId}_${dist}` -> {attempt1:{distance,zone}, attempt2:{distance,zone}}
+  payloadData: {}, // key: `${category}_${teamId}` -> {time, condition, zone}
+};
+
+let isSyncing = false;
+let selectedTeamId = null; // currently open team in judge entry view
+let payloadFormFocused = false; // true while a payload time/condition input has focus on main view
+
+function isEntryFormOpen(){
+  if(state.role==='judge1' || state.role==='judge2'){
+    return !!selectedTeamId;
+  }
+  if(state.role==='main'){
+    return payloadFormFocused;
+  }
+  return false;
+}
+
+/* ====================== STORAGE HELPERS (FIREBASE) ====================== */
+
+const TEAMS_PATH = 'teams';
+const TARGET_PATH = 'targetData';
+const PAYLOAD_PATH = 'payloadData';
+
+let listenersAttached = false;
+
+function attachListeners(onUpdate){
+  if(listenersAttached || !dbRef) return;
+  listenersAttached = true;
+
+  // Team list changes are safe to re-render immediately for everyone.
+  dbRef.ref(TEAMS_PATH).on('value', snap=>{
+    const val = snap.val();
+    state.teams = val ? Object.values(val) : [];
+    onUpdate();
+  });
+
+  // Judges actively typing distances should not have their in-progress entry
+  // wiped by a re-render triggered from another judge's update. Update the
+  // underlying state silently; the judge's own save action re-renders safely.
+  // The Hakim Utama dashboard (read-only for target data) always re-renders live.
+  dbRef.ref(TARGET_PATH).on('value', snap=>{
+    state.targetData = snap.val() || {};
+    if(state.role === 'main' || !isEntryFormOpen()) onUpdate();
+  });
+  dbRef.ref(PAYLOAD_PATH).on('value', snap=>{
+    state.payloadData = snap.val() || {};
+    if(!isEntryFormOpen()) onUpdate();
+  });
+}
+
+function sanitizeKey(k){
+  // Firebase RTDB keys cannot contain . $ # [ ] /  (defensive, keys are already safe by construction)
+  return String(k).replace(/[.$#\[\]\/]/g, '_');
+}
+
+async function saveTeams(){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    const obj = {};
+    state.teams.forEach(t=> obj[t.id] = t);
+    await dbRef.ref(TEAMS_PATH).set(obj);
+  }catch(e){ console.error('saveTeams error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+async function saveTargetEntry(key, entry){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    await dbRef.ref(TARGET_PATH + '/' + key).set(entry);
+  }catch(e){ console.error('saveTargetEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+async function savePayloadEntry(key, entry){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    await dbRef.ref(PAYLOAD_PATH + '/' + key).set(entry);
+  }catch(e){ console.error('savePayloadEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+function setSyncing(v){
+  isSyncing = v;
+  const dot = document.querySelector('.sync-dot');
+  if(dot) dot.classList.toggle('syncing', v);
+}
+
+/* ====================== UTILITIES ====================== */
+
+function teamKey(cat, teamId, dist){ return `${cat}_${teamId}_${dist}`; }
+function payloadKey(cat, teamId){ return `${cat}_${teamId}`; }
+
+function getBestAttempt(entry){
+  // entry: {attempt1:{distance,zone}, attempt2:{distance,zone}}
+  if(!entry) return null;
+  const a1 = entry.attempt1, a2 = entry.attempt2;
+  const valid = [a1,a2].filter(a => a && a.distance !== '' && a.distance !== null && a.distance !== undefined);
+  if(valid.length===0) return null;
+  // prefer "dalam zon" over "luar zon"; within same zone, smaller distance wins
+  valid.sort((x,y)=>{
+    if(x.zone !== y.zone) return x.zone==='in' ? -1 : 1;
+    return parseFloat(x.distance) - parseFloat(y.distance);
+  });
+  return valid[0];
+}
+
+function computeTargetRanking(category, dist){
+  // returns array of {teamId, teamName, best, rank, mark} sorted by rank
+  const rows = state.teams.map(t=>{
+    const entry = state.targetData[teamKey(category, t.id, dist)];
+    const best = getBestAttempt(entry);
+    return { teamId: t.id, teamName: t.name, best };
+  }).filter(r => r.best !== null);
+
+  rows.sort((a,b)=>{
+    if(a.best.zone !== b.best.zone) return a.best.zone==='in' ? -1 : 1;
+    return parseFloat(a.best.distance) - parseFloat(b.best.distance);
+  });
+
+  rows.forEach((r,i)=>{
+    r.rank = i+1;
+    r.mark = markForRank(r.rank);
+  });
+  return rows;
+}
+
+function computeOverallTargetScore(category){
+  const cfg = CATEGORY_LABELS[category];
+  const r1 = computeTargetRanking(category, cfg.d1);
+  const r2 = computeTargetRanking(category, cfg.d2);
+  const m1 = {}; r1.forEach(r=>m1[r.teamId]=r);
+  const m2 = {}; r2.forEach(r=>m2[r.teamId]=r);
+
+  const rows = state.teams.map(t=>{
+    const e1 = m1[t.id], e2 = m2[t.id];
+    const mark1 = e1 ? e1.mark : 0;
+    const mark2 = e2 ? e2.mark : 0;
+    const hasAny = e1 || e2;
+    const avgMark = hasAny ? (mark1+mark2)/2 : null;
+    return { teamId:t.id, teamName:t.name, mark1, mark2, avgMark, e1, e2 };
+  });
+
+  const withScore = rows.filter(r=>r.avgMark!==null);
+  withScore.sort((a,b)=> b.avgMark - a.avgMark);
+  withScore.forEach((r,i)=> r.overallRank = i+1);
+
+  const withoutScore = rows.filter(r=>r.avgMark===null);
+
+  return { ranked: withScore, unranked: withoutScore };
+}
+
+function computePayloadRanking(category){
+  const rows = state.teams.map(t=>{
+    const d = state.payloadData[payloadKey(category, t.id)];
+    return { teamId:t.id, teamName:t.name, data:d };
+  }).filter(r=> r.data && r.data.time !== '' && r.data.time !== null && r.data.time !== undefined);
+
+  rows.sort((a,b)=> parseFloat(b.data.time) - parseFloat(a.data.time)); // longest time best
+
+  rows.forEach((r,i)=>{
+    r.rank = i+1;
+    const timeMark = payloadMarkForRank(r.rank); // out of 25
+    const condMark = r.data.condition==='baik' ? 8 : 0; // out of 8
+    const zoneMark = r.data.zone==='in' ? 7 : 0; // out of 7
+    r.timeMark = timeMark;
+    r.condMark = condMark;
+    r.zoneMark = zoneMark;
+    r.total = timeMark + condMark + zoneMark; // out of 40
+  });
+  return rows;
+}
+
+function computeFinalStandings(category){
+  const targetRes = computeOverallTargetScore(category);
+  const payloadRows = computePayloadRanking(category);
+  const payloadMap = {}; payloadRows.forEach(r=> payloadMap[r.teamId]=r);
+
+  // Need ranks for A (target, 60%) and B (payload, 40%) -- per spec these are RANK-based marks already (avgMark IS the markah, out of 60)
+  const allTeamIds = state.teams.map(t=>t.id);
+  const rows = allTeamIds.map(id=>{
+    const t = state.teams.find(x=>x.id===id);
+    const tgt = targetRes.ranked.find(r=>r.teamId===id);
+    const pay = payloadMap[id];
+    const markA = tgt ? tgt.avgMark : 0; // out of 60
+    const markB = pay ? pay.total : 0; // out of 40
+    const total = markA + markB;
+    return {
+      teamId:id, teamName:t.name,
+      targetRank: tgt ? tgt.overallRank : null,
+      markA: markA,
+      payloadRank: pay ? pay.rank : null,
+      markB: markB,
+      total
+    };
+  });
+
+  rows.sort((a,b)=> b.total - a.total);
+  rows.forEach((r,i)=> r.finalRank = i+1);
+  return rows;
+}
+
+function fmtNum(n, decimals=1){
+  if(n===null || n===undefined || isNaN(n)) return '—';
+  const rounded = Math.round(n*Math.pow(10,decimals))/Math.pow(10,decimals);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(decimals);
+}
+
+function showToast(msg){
+  const existing = document.querySelector('.toast');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.className='toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 1800);
+}
+
+/* ====================== RENDER: ROOT ====================== */
+
+function render(){
+  const app = document.getElementById('app');
+
+  if(state.phase==='setup'){
+    app.innerHTML = renderSetupScreen();
+    bindSetupScreen();
+    return;
+  }
+
+  if(state.phase==='role-select' || !state.role){
+    app.innerHTML = renderRoleSelect();
+    bindRoleSelect();
+    return;
+  }
+
+  app.innerHTML = renderTopbar() + renderBody();
+  bindGlobal();
+  if(state.role==='judge1') bindJudgeView(CATEGORY_LABELS[state.category].d1);
+  if(state.role==='judge2') bindJudgeView(CATEGORY_LABELS[state.category].d2);
+  if(state.role==='main') bindMainView();
+}
+
+function renderSetupScreen(){
+  return `
+    <div class="setup-screen">
+      <div class="setup-box">
+        <h1>Sediakan sambungan Firebase</h1>
+        <p>Tampal config Firebase awak di bawah. Boleh salin terus dari Firebase Console — format <code>const firebaseConfig = {...}</code> atau JSON <code>{...}</code> kedua-dua diterima.</p>
+        <ol>
+          <li>Pergi ke <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → pilih projek</li>
+          <li>Klik ikon gear ⚙️ → <b>Project settings</b> → scroll ke bawah ke "Your apps"</li>
+          <li>Klik tab <b>Config</b> → salin keseluruhan blok kod yang muncul</li>
+          <li>Tampal di bawah dan klik "Sambung"</li>
+        </ol>
+        <p style="color:var(--amber);font-size:12px;margin:0 0 10px;">⚠️ Pastikan Realtime Database sudah diaktifkan dan tab Rules ditetapkan kepada <b>test mode</b> (.read: true, .write: true)</p>
+        <textarea class="setup-textarea" id="config-input" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "databaseURL": "https://....firebaseio.com",
+  "projectId": "...",
+  ...
+}'></textarea>
+        <div class="setup-error" id="setup-error"></div>
+        <button class="save-btn" id="setup-submit">Sambung & teruskan</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindSetupScreen(){
+  document.getElementById('setup-submit').addEventListener('click', async ()=>{
+    const raw = document.getElementById('config-input').value.trim();
+    const errEl = document.getElementById('setup-error');
+    const btn = document.getElementById('setup-submit');
+    errEl.textContent = '';
+
+    let parsed;
+    try{
+      // Accept both raw JSON object and "const firebaseConfig = {...};" format
+      let jsonStr = raw;
+      const match = raw.match(/firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;?\s*$/);
+      if(match) jsonStr = match[1];
+      // replace JS-style keys (unquoted) with quoted keys for JSON.parse
+      // Only match keys at start of object entries, not colons inside string values
+      jsonStr = jsonStr.replace(/([{,\n]\s*)([a-zA-Z_]\w*)(\s*):/g, '$1"$2"$3:');
+      // remove trailing commas
+      jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+      parsed = JSON.parse(jsonStr);
+    }catch(e){
+      errEl.textContent = 'Format tidak sah: ' + e.message + '. Cuba salin hanya bahagian { ... } sahaja.';
+      return;
+    }
+
+    if(!parsed.databaseURL){
+      errEl.textContent = 'Tiada "databaseURL" dalam config. Pastikan Realtime Database sudah diaktifkan dan URL database disertakan.';
+      return;
+    }
+
+    // Reset Firebase if already initialized (handled inside initFirebase)
+    if(typeof firebase === 'undefined'){
+      errEl.textContent = 'Pustaka Firebase belum siap dimuat. Tunggu beberapa saat dan cuba lagi (atau muat semula halaman).';
+      return;
+    }
+    const ok = await initFirebase(parsed);
+    if(!ok){
+      errEl.textContent = 'Gagal init Firebase. Semak semula config — pastikan apiKey, projectId dan databaseURL betul.';
+      return;
+    }
+
+    // Test actual DB connection
+    btn.textContent = 'Menguji sambungan...';
+    btn.disabled = true;
+    errEl.style.color = 'var(--text-dim)';
+    errEl.textContent = 'Menghubungi database...';
+
+    try{
+      await dbRef.ref('.info/connected').once('value');
+      // Try a test write to verify rules allow access
+      await dbRef.ref('_connectionTest').set({ ts: Date.now() });
+      await dbRef.ref('_connectionTest').remove();
+    }catch(e){
+      btn.textContent = 'Sambung & teruskan';
+      btn.disabled = false;
+      errEl.style.color = 'var(--red)';
+      if(e.code === 'PERMISSION_DENIED'){
+        errEl.textContent = 'Berjaya sambung ke Firebase, TAPI Security Rules menolak akses. Pergi ke Realtime Database → tab "Rules" → tukar kepada: { "rules": { ".read": true, ".write": true } } → klik Publish.';
+      } else {
+        errEl.textContent = 'Ralat sambungan: ' + (e.message || e.code || JSON.stringify(e));
+      }
+      return;
+    }
+
+    errEl.style.color = 'var(--green)';
+    errEl.textContent = 'Berjaya disambungkan ✓';
+    saveConfig(parsed);
+    setTimeout(()=>{
+      state.phase = 'role-select';
+      render();
+    }, 800);
+  });
+}
+
+function renderRoleSelect(){
+  return `
+    <div class="role-select">
+      <h1>Water Rocket Challenge</h1>
+      <p>Karnival STEM Peringkat Kebangsaan 2026 — Sistem Pemarkahan. Pilih peranan anda untuk pertandingan ini.</p>
+      <div class="role-card" data-role="judge1">
+        <div class="role-icon r1">S1</div>
+        <div>
+          <p class="role-card-title">Hakim Sasaran 1</p>
+          <p class="role-card-desc">Rekod jarak pelancaran untuk Jarak Sasaran 1 (60m / 70m)</p>
+        </div>
+      </div>
+      <div class="role-card" data-role="judge2">
+        <div class="role-icon r2">S2</div>
+        <div>
+          <p class="role-card-title">Hakim Sasaran 2</p>
+          <p class="role-card-desc">Rekod jarak pelancaran untuk Jarak Sasaran 2 (70m / 80m)</p>
+        </div>
+      </div>
+      <div class="role-card" data-role="main">
+        <div class="role-icon rm">U</div>
+        <div>
+          <p class="role-card-title">Hakim Utama</p>
+          <p class="role-card-desc">Pantau & selaraskan kedua-dua sasaran, papan markah penuh, payung terjun berbeban</p>
+        </div>
+      </div>
+      <button class="switch-role" id="reset-config" style="margin-top:10px;">Tukar sambungan Firebase</button>
+    </div>
+  `;
+}
+
+function bindRoleSelect(){
+  document.querySelectorAll('.role-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      state.role = card.dataset.role;
+      state.phase = 'app';
+      render();
+      attachListeners(render);
+    });
+  });
+  const resetBtn = document.getElementById('reset-config');
+  if(resetBtn) resetBtn.addEventListener('click', ()=>{
+    clearConfig();
+    state.phase = 'setup';
+    render();
+  });
+}
+
+function renderTopbar(){
+  const roleLabel = state.role==='judge1' ? 'Hakim Sasaran 1' : state.role==='judge2' ? 'Hakim Sasaran 2' : 'Hakim Utama';
+  const roleClass = state.role==='judge1' ? 'r1' : state.role==='judge2' ? 'r2' : 'rm';
+  return `
+    <div class="topbar">
+      <div class="topbar-left">
+        <div>
+          <div class="topbar-title">Water Rocket Challenge</div>
+          <div class="topbar-sub">Karnival STEM Kebangsaan 2026</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="sync-pill"><span class="sync-dot"></span>Sync</span>
+        <span class="role-badge ${roleClass}">${roleLabel}</span>
+        <button class="switch-role" id="btn-switch-role">Tukar</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindGlobal(){
+  const btn = document.getElementById('btn-switch-role');
+  if(btn) btn.addEventListener('click', ()=>{
+    state.role = null;
+    state.phase = 'role-select';
+    render();
+  });
+}
+
+function renderBody(){
+  if(state.role==='judge1') return renderJudgeView(1);
+  if(state.role==='judge2') return renderJudgeView(2);
+  if(state.role==='main') return renderMainView();
+  return '';
+}
+
+/* ====================== JUDGE VIEW (Sasaran 1 / Sasaran 2) ====================== */
+
+function renderJudgeView(judgeNum){
+  const cfg = CATEGORY_LABELS[state.category];
+  const dist = judgeNum===1 ? cfg.d1 : cfg.d2;
+
+  return `
+    <div class="section">
+      <div class="seg-control" id="cat-seg">
+        <button class="seg-btn ${state.category==='SR'?'active':''}" data-cat="SR">Sekolah Rendah</button>
+        <button class="seg-btn ${state.category==='SM'?'active':''}" data-cat="SM">Sekolah Menengah</button>
+      </div>
+
+      <div class="info-note">
+        Merekod jarak <b>Jarak Sasaran ${judgeNum} (${dist} m)</b> bagi kategori ${cfg.name}. Tanda "Dalam Zon" jika roket jatuh dalam bulatan sasaran, atau "Luar Zon" jika jatuh di luar.
+      </div>
+
+      ${renderTeamManager()}
+
+      <div class="section-title">Pilih Pasukan (Negeri)</div>
+      <div class="team-grid" id="team-grid">
+        ${state.teams.length===0 ? '<div class="empty-state" style="width:100%">Belum ada pasukan ditambah. Sila tambah pasukan di atas.</div>' :
+          state.teams.map(t=>{
+            const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
+            return `<button class="team-chip ${hasData?'has-data':''}" data-team="${t.id}">${escapeHtml(t.name)}</button>`;
+          }).join('')}
+      </div>
+
+      <div id="entry-area"></div>
+    </div>
+  `;
+}
+
+function bindJudgeView(dist){
+  document.querySelectorAll('#cat-seg .seg-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.category = btn.dataset.cat;
+      selectedTeamId = null;
+      render();
+    });
+  });
+  bindTeamManager();
+  document.querySelectorAll('#team-grid .team-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      selectedTeamId = chip.dataset.team;
+      document.querySelectorAll('#team-grid .team-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      renderEntryArea(dist);
+    });
+  });
+  if(selectedTeamId && state.teams.find(t=>t.id===selectedTeamId)){
+    const chip = document.querySelector(`#team-grid .team-chip[data-team="${selectedTeamId}"]`);
+    if(chip) chip.classList.add('active');
+    renderEntryArea(dist);
+  }
+}
+
+function renderEntryArea(dist){
+  const area = document.getElementById('entry-area');
+  if(!selectedTeamId){ area.innerHTML=''; return; }
+  const team = state.teams.find(t=>t.id===selectedTeamId);
+  const key = teamKey(state.category, selectedTeamId, dist);
+  const entry = state.targetData[key] || { attempt1:{distance:'',zone:'in'}, attempt2:{distance:'',zone:'in'} };
+
+  area.innerHTML = `
+    <div class="section-title">${escapeHtml(team.name)} — Jarak ${dist} m</div>
+    <div class="card">
+      ${[1,2].map(n=>{
+        const a = entry['attempt'+n] || {distance:'',zone:'in'};
+        return `
+        <div class="attempt-block">
+          <div class="attempt-head">Pelancaran ${n}</div>
+          <div class="input-group">
+            <div class="input-wrap">
+              <label>Jarak dari sasaran (m)</label>
+              <input type="number" inputmode="decimal" step="0.01" min="0" class="num-input" id="dist-${n}" value="${a.distance}" placeholder="0.00">
+            </div>
+          </div>
+          <div class="zone-toggle">
+            <button class="zone-btn zone-in ${a.zone==='in'?'active':''}" data-attempt="${n}" data-zone="in">Dalam Zon</button>
+            <button class="zone-btn zone-out ${a.zone==='out'?'active':''}" data-attempt="${n}" data-zone="out">Luar Zon</button>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="save-btn" id="save-entry">Simpan rekod</button>
+      <div class="save-confirm" id="save-confirm"></div>
+    </div>
+  `;
+
+  let localEntry = JSON.parse(JSON.stringify(entry));
+
+  document.querySelectorAll('.zone-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const n = btn.dataset.attempt;
+      const zone = btn.dataset.zone;
+      localEntry['attempt'+n].zone = zone;
+      document.querySelectorAll(`.zone-btn[data-attempt="${n}"]`).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  document.getElementById('save-entry').addEventListener('click', async ()=>{
+    [1,2].forEach(n=>{
+      const distVal = document.getElementById('dist-'+n).value;
+      localEntry['attempt'+n].distance = distVal;
+    });
+    state.targetData[key] = localEntry;
+    await saveTargetEntry(key, localEntry);
+    document.getElementById('save-confirm').textContent = 'Disimpan ✓';
+    setTimeout(()=>{ const c = document.getElementById('save-confirm'); if(c) c.textContent=''; }, 1500);
+    // refresh has-data marker
+    const chip = document.querySelector(`#team-grid .team-chip[data-team="${selectedTeamId}"]`);
+    if(chip) chip.classList.add('has-data');
+  });
+}
+
+/* ====================== TEAM MANAGER (shared component) ====================== */
+
+function renderTeamManager(){
+  return `
+    <div class="section-title">Senarai Pasukan</div>
+    <div class="add-team-row">
+      <input type="text" class="add-team-input" id="new-team-name" placeholder="Nama negeri / pasukan">
+      <button class="add-team-btn" id="add-team-btn">Tambah</button>
+    </div>
+  `;
+}
+
+function bindTeamManager(){
+  const btn = document.getElementById('add-team-btn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    const input = document.getElementById('new-team-name');
+    const name = input.value.trim();
+    if(!name) return;
+    const id = 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    state.teams.push({id, name});
+    await saveTeams();
+    input.value='';
+    showToast('Pasukan "'+name+'" ditambah');
+    render();
+  });
+  const input = document.getElementById('new-team-name');
+  if(input){
+    input.addEventListener('keypress', (e)=>{ if(e.key==='Enter') btn.click(); });
+  }
+}
+
+/* ====================== MAIN VIEW (Hakim Utama) ====================== */
+
+function renderMainView(){
+  return `
+    <div class="section">
+      <div class="seg-control" id="cat-seg">
+        <button class="seg-btn ${state.category==='SR'?'active':''}" data-cat="SR">Sekolah Rendah</button>
+        <button class="seg-btn ${state.category==='SM'?'active':''}" data-cat="SM">Sekolah Menengah</button>
+      </div>
+
+      <div class="seg-control" id="view-seg">
+        <button class="seg-btn ${mainSubView==='overview'?'active':''}" data-view="overview">Ringkasan</button>
+        <button class="seg-btn ${mainSubView==='target'?'active':''}" data-view="target">Sasaran</button>
+        <button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>
+        <button class="seg-btn ${mainSubView==='final'?'active':''}" data-view="final">Keputusan Akhir</button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="refresh-btn" id="refresh-now">↻ Muat semula</button>
+      </div>
+
+      <div id="main-content">${renderMainSubView()}</div>
+    </div>
+  `;
+}
+
+let mainSubView = 'overview';
+
+function renderMainSubView(){
+  if(mainSubView==='overview') return renderOverview();
+  if(mainSubView==='target') return renderTargetDetail();
+  if(mainSubView==='payload') return renderPayloadEntry();
+  if(mainSubView==='final') return renderFinalStandings();
+  return '';
+}
+
+function bindMainView(){
+  document.querySelectorAll('#cat-seg .seg-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ state.category = btn.dataset.cat; render(); });
+  });
+  document.querySelectorAll('#view-seg .seg-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ mainSubView = btn.dataset.view; render(); });
+  });
+  document.getElementById('refresh-now').addEventListener('click', ()=>{
+    showToast('Data terkini (sync automatik aktif)');
+    render();
+  });
+  if(mainSubView==='payload') bindPayloadEntry();
+}
+
+function renderOverview(){
+  const cfg = CATEGORY_LABELS[state.category];
+  const r1 = computeTargetRanking(state.category, cfg.d1);
+  const r2 = computeTargetRanking(state.category, cfg.d2);
+  const payload = computePayloadRanking(state.category);
+  const totalTeams = state.teams.length;
+
+  return `
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-card-label">Jumlah pasukan</div><div class="stat-card-val">${totalTeams}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Jarak ${cfg.d1}m direkod</div><div class="stat-card-val">${r1.length}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Jarak ${cfg.d2}m direkod</div><div class="stat-card-val">${r2.length}</div></div>
+      <div class="stat-card"><div class="stat-card-label">Payung terjun direkod</div><div class="stat-card-val">${payload.length}</div></div>
+    </div>
+
+    <div class="section-title">Kedudukan terkini — Jarak ${cfg.d1} m</div>
+    ${renderRankTable(r1, cfg.d1)}
+
+    <div class="section-title">Kedudukan terkini — Jarak ${cfg.d2} m</div>
+    ${renderRankTable(r2, cfg.d2)}
+  `;
+}
+
+function renderRankTable(rows, dist){
+  if(rows.length===0) return `<div class="empty-state">Belum ada rekod jarak untuk ${dist}m.</div>`;
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Jarak terbaik</th><th>Zon</th><th>Markah</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td class="rank-cell ${r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':''}">${r.rank}</td>
+              <td>${escapeHtml(r.teamName)}</td>
+              <td>${r.best.distance} m</td>
+              <td><span class="badge ${r.best.zone==='in'?'in':'out'}">${r.best.zone==='in'?'Dalam':'Luar'}</span></td>
+              <td class="mark-cell">${r.mark}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderTargetDetail(){
+  const cfg = CATEGORY_LABELS[state.category];
+  const result = computeOverallTargetScore(state.category);
+
+  return `
+    <div class="section-title">Markah keseluruhan kategori sasaran (60%) — ${cfg.name}</div>
+    <div class="info-note">Markah = purata markah Jarak ${cfg.d1}m dan Jarak ${cfg.d2}m, berdasarkan kedudukan (ranking) ikut jadual rasmi. Pasukan "Dalam Zon" diutamakan berbanding "Luar Zon" pada setiap jarak.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Markah Jarak ${cfg.d1}m</th><th>Markah Jarak ${cfg.d2}m</th><th>Purata Markah</th></tr></thead>
+        <tbody>
+          ${result.ranked.map(r=>`
+            <tr>
+              <td class="rank-cell ${r.overallRank===1?'rank-1':r.overallRank===2?'rank-2':r.overallRank===3?'rank-3':''}">${r.overallRank}</td>
+              <td>${escapeHtml(r.teamName)}</td>
+              <td>${r.e1 ? r.mark1 : '<span class="muted">—</span>'}</td>
+              <td>${r.e2 ? r.mark2 : '<span class="muted">—</span>'}</td>
+              <td class="mark-cell">${fmtNum(r.avgMark)}</td>
+            </tr>
+          `).join('')}
+          ${result.unranked.map(r=>`
+            <tr>
+              <td class="muted">—</td>
+              <td>${escapeHtml(r.teamName)}</td>
+              <td class="muted">—</td>
+              <td class="muted">—</td>
+              <td class="muted">Belum ada rekod</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderPayloadEntry(){
+  const cfg = CATEGORY_LABELS[state.category];
+  const rows = computePayloadRanking(state.category);
+
+  return `
+    <div class="info-note">Hakim Utama merekod keputusan kategori Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%).</div>
+
+    ${renderTeamManager()}
+
+    <div class="section-title">Rekod pelancaran (${cfg.name})</div>
+    ${state.teams.length===0 ? '<div class="empty-state">Belum ada pasukan ditambah.</div>' : state.teams.map(t=>{
+      const key = payloadKey(state.category, t.id);
+      const d = state.payloadData[key] || {time:'', condition:'baik', zone:'in'};
+      return `
+        <div class="card">
+          <div class="attempt-head" style="margin-bottom:10px;">${escapeHtml(t.name)}</div>
+          <div class="input-group">
+            <div class="input-wrap">
+              <label>Masa di udara (saat)</label>
+              <input type="number" inputmode="decimal" step="0.1" min="0" class="num-input" id="pl-time-${t.id}" value="${d.time}" placeholder="0.0">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
+            <div class="cond-grid">
+              <button class="cond-btn ${d.condition==='baik'?'active':''}" data-team="${t.id}" data-field="condition" data-val="baik">Baik</button>
+              <button class="cond-btn bad ${d.condition==='rosak'?'active':''}" data-team="${t.id}" data-field="condition" data-val="rosak">Rosak / Pecah</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Zon pendaratan</label>
+            <div class="zone-grid">
+              <button class="cond-btn ${d.zone==='in'?'active':''}" data-team="${t.id}" data-field="zone" data-val="in">Dalam Zon</button>
+              <button class="cond-btn bad ${d.zone==='out'?'active':''}" data-team="${t.id}" data-field="zone" data-val="out">Luar Zon</button>
+            </div>
+          </div>
+          <button class="save-btn" data-save-payload="${t.id}">Simpan rekod</button>
+          <div class="save-confirm" id="pl-confirm-${t.id}"></div>
+        </div>
+      `;
+    }).join('')}
+
+    ${rows.length>0 ? `
+    <div class="section-title">Kedudukan kategori payung terjun berbeban</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Masa (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td class="rank-cell ${r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':''}">${r.rank}</td>
+              <td>${escapeHtml(r.teamName)}</td>
+              <td>${r.data.time}</td>
+              <td>${r.timeMark}</td>
+              <td>${r.condMark}</td>
+              <td>${r.zoneMark}</td>
+              <td class="mark-cell">${r.total}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  `;
+}
+
+function bindPayloadEntry(){
+  bindTeamManager();
+  document.querySelectorAll('[id^="pl-time-"]').forEach(input=>{
+    input.addEventListener('focus', ()=>{ payloadFormFocused = true; });
+    input.addEventListener('blur', ()=>{ payloadFormFocused = false; });
+  });
+  document.querySelectorAll('.cond-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const teamId = btn.dataset.team, field = btn.dataset.field, val = btn.dataset.val;
+      document.querySelectorAll(`.cond-btn[data-team="${teamId}"][data-field="${field}"]`).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('[data-save-payload]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const teamId = btn.dataset.savePayload;
+      const time = document.getElementById('pl-time-'+teamId).value;
+      const condBtn = document.querySelector(`.cond-btn[data-team="${teamId}"][data-field="condition"].active`);
+      const zoneBtn = document.querySelector(`.cond-btn[data-team="${teamId}"][data-field="zone"].active`);
+      const key = payloadKey(state.category, teamId);
+      const entry = {
+        time: time,
+        condition: condBtn ? condBtn.dataset.val : 'baik',
+        zone: zoneBtn ? zoneBtn.dataset.val : 'in'
+      };
+      state.payloadData[key] = entry;
+      await savePayloadEntry(key, entry);
+      const c = document.getElementById('pl-confirm-'+teamId);
+      if(c){ c.textContent='Disimpan ✓'; setTimeout(()=>{ if(c) c.textContent=''; }, 1500); }
+    });
+  });
+}
+
+function renderFinalStandings(){
+  const cfg = CATEGORY_LABELS[state.category];
+  const rows = computeFinalStandings(state.category);
+  if(state.teams.length===0) return '<div class="empty-state">Belum ada pasukan ditambah.</div>';
+
+  return `
+    <div class="section-title">Keputusan akhir keseluruhan — ${cfg.name}</div>
+    <div class="info-note">Markah Keseluruhan = Markah Sasaran (60%) + Markah Payung Terjun Berbeban (40%)</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Markah Sasaran (60%)</th><th>Markah Payung (40%)</th><th>Markah Keseluruhan</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td class="rank-cell ${r.finalRank===1?'rank-1':r.finalRank===2?'rank-2':r.finalRank===3?'rank-3':''}">${r.finalRank}</td>
+              <td>${escapeHtml(r.teamName)}</td>
+              <td>${fmtNum(r.markA)}</td>
+              <td>${fmtNum(r.markB)}</td>
+              <td class="mark-cell">${fmtNum(r.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ====================== INIT ====================== */
+
+(async function init(){
+  const saved = getSavedConfig();
+  if(saved){
+    const ok = await initFirebase(saved);
+    state.phase = ok ? 'role-select' : 'setup';
+  } else {
+    state.phase = 'setup';
+  }
+  render();
+})();
+</script>
+</body>
+</html>
