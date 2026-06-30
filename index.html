@@ -6,22 +6,28 @@
 <title>Water Rocket Challenge — Sistem Markah</title>
 <style>
   :root{
-    --bg:#0f1720;
-    --panel:#16212c;
-    --panel2:#1c2a37;
-    --border:#2a3a48;
-    --border-light:#3a4d5e;
-    --text:#eef3f7;
-    --text-dim:#9fb1c0;
-    --text-faint:#6b7d8c;
-    --green:#1fae6b;
-    --green-dim:#164d33;
-    --amber:#e8a23a;
-    --amber-dim:#5c4419;
-    --red:#e25555;
-    --red-dim:#5c2424;
-    --blue:#3f8de0;
-    --blue-dim:#1d3a55;
+    --bg:#f7f8fa;
+    --panel:#ffffff;
+    --panel2:#f1f3f6;
+    --border:#e3e7ec;
+    --border-light:#d3d9e0;
+    --text:#1a1f29;
+    --text-dim:#5b6573;
+    --text-faint:#8b95a3;
+    --green:#1a9b5c;
+    --green-dim:#e3f7ec;
+    --green-text:#0d6e3f;
+    --amber:#d68a1e;
+    --amber-dim:#fdf1de;
+    --amber-text:#9c640f;
+    --red:#d6433a;
+    --red-dim:#fbeae8;
+    --red-text:#a82f27;
+    --blue:#3568d4;
+    --blue-dim:#eaf0fd;
+    --blue-text:#2750a8;
+    --shadow:0 1px 3px rgba(20,30,50,0.06), 0 1px 2px rgba(20,30,50,0.04);
+    --shadow-md:0 4px 16px rgba(20,30,50,0.08), 0 2px 4px rgba(20,30,50,0.04);
     --radius:10px;
     --radius-lg:16px;
   }
@@ -36,32 +42,44 @@
   }
   button{font-family:inherit;}
   input,select{font-family:inherit;}
+  code{background:var(--panel2);padding:2px 6px;border-radius:4px;font-size:0.9em;}
 
   #app{max-width:1100px;margin:0 auto;padding:0 0 80px;}
 
   /* ---------- top bar ---------- */
   .topbar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;
+    padding:14px 18px;
     background:var(--panel);
     border-bottom:1px solid var(--border);
     position:sticky;top:0;z-index:50;
   }
   .topbar-left{display:flex;align-items:center;gap:10px;}
-  .topbar-title{font-size:15px;font-weight:700;letter-spacing:0.2px;}
-  .topbar-sub{font-size:11px;color:var(--text-dim);}
+  .topbar-title{font-size:15px;font-weight:700;letter-spacing:0.2px;color:var(--text);}
+  .topbar-sub{font-size:11px;color:var(--text-faint);}
+  .user-chip{
+    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);
+  }
+  .user-avatar{
+    width:26px;height:26px;border-radius:50%;background:var(--blue-dim);color:var(--blue-text);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+    overflow:hidden;
+  }
+  .user-avatar img{width:100%;height:100%;object-fit:cover;}
   .role-badge{
     font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;
     background:var(--panel2);border:1px solid var(--border-light);color:var(--text-dim);
   }
-  .role-badge.r1{color:var(--blue);border-color:var(--blue);}
-  .role-badge.r2{color:var(--amber);border-color:var(--amber);}
-  .role-badge.rm{color:var(--green);border-color:var(--green);}
-  .switch-role{
+  .role-badge.r1{color:var(--blue-text);background:var(--blue-dim);border-color:var(--blue-dim);}
+  .role-badge.r2{color:var(--amber-text);background:var(--amber-dim);border-color:var(--amber-dim);}
+  .role-badge.rm{color:var(--green-text);background:var(--green-dim);border-color:var(--green-dim);}
+  .role-badge.radm{color:#7339c9;background:#f1e9fc;border-color:#f1e9fc;}
+  .icon-btn{
     background:none;border:1px solid var(--border-light);color:var(--text-dim);
-    font-size:11px;padding:6px 10px;border-radius:8px;cursor:pointer;
+    font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;
   }
-  .switch-role:active{transform:scale(0.96);}
+  .icon-btn:hover{background:var(--panel2);}
+  .icon-btn:active{transform:scale(0.96);}
 
   .sync-pill{
     display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);
@@ -70,32 +88,70 @@
   .sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite;}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-  /* ---------- role select screen ---------- */
+  /* ---------- login screen ---------- */
+  .login-screen{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;gap:18px;background:linear-gradient(180deg,#f7f8fa 0%,#eef1f6 100%);
+  }
+  .login-box{
+    width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:36px 32px;text-align:center;box-shadow:var(--shadow-md);
+  }
+  .login-icon{
+    width:56px;height:56px;border-radius:16px;background:var(--blue-dim);color:var(--blue-text);
+    display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 18px;
+  }
+  .login-box h1{font-size:19px;margin:0 0 6px;color:var(--text);}
+  .login-box p{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 24px;}
+  .google-btn{
+    width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:13px;border-radius:10px;border:1px solid var(--border-light);background:var(--panel);
+    color:var(--text);font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .google-btn:hover{background:var(--panel2);}
+  .google-btn:active{transform:scale(0.98);}
+  .google-icon{width:18px;height:18px;flex-shrink:0;}
+
+  .waiting-box{
+    width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:32px;text-align:center;box-shadow:var(--shadow-md);
+  }
+  .waiting-icon{
+    width:52px;height:52px;border-radius:50%;background:var(--amber-dim);color:var(--amber-text);
+    display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 16px;
+  }
+  .waiting-box h2{font-size:17px;margin:0 0 8px;}
+  .waiting-box p{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 4px;}
+  .waiting-email{font-size:13px;color:var(--text);font-weight:600;background:var(--panel2);padding:8px 14px;border-radius:8px;display:inline-block;margin:10px 0;}
+
+  /* ---------- role select (admin testing) ---------- */
   .role-select{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     min-height:90vh;padding:24px;gap:14px;
   }
-  .role-select h1{font-size:20px;margin:0 0 4px;text-align:center;}
+  .role-select h1{font-size:20px;margin:0 0 4px;text-align:center;color:var(--text);}
   .role-select p{color:var(--text-dim);font-size:13px;margin:0 0 18px;text-align:center;max-width:340px;}
   .role-card{
     width:100%;max-width:380px;
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);
     padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;
-    text-align:left;
+    text-align:left;box-shadow:var(--shadow);
   }
+  .role-card:hover{border-color:var(--border-light);box-shadow:var(--shadow-md);}
   .role-card:active{transform:scale(0.98);}
   .role-icon{
     width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
     font-size:18px;font-weight:700;flex-shrink:0;
   }
-  .role-icon.r1{background:var(--blue-dim);color:var(--blue);}
-  .role-icon.r2{background:var(--amber-dim);color:var(--amber);}
-  .role-icon.rm{background:var(--green-dim);color:var(--green);}
-  .role-card-title{font-size:15px;font-weight:700;margin:0 0 2px;}
+  .role-icon.r1{background:var(--blue-dim);color:var(--blue-text);}
+  .role-icon.r2{background:var(--amber-dim);color:var(--amber-text);}
+  .role-icon.rm{background:var(--green-dim);color:var(--green-text);}
+  .role-icon.radm{background:#f1e9fc;color:#7339c9;}
+  .role-card-title{font-size:15px;font-weight:700;margin:0 0 2px;color:var(--text);}
   .role-card-desc{font-size:12px;color:var(--text-dim);margin:0;}
 
   /* ---------- section layout ---------- */
-  .section{padding:16px;}
+  .section{padding:18px;}
   .section-title{font-size:13px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin:18px 0 10px;}
   .section-title:first-child{margin-top:4px;}
 
@@ -106,30 +162,26 @@
     flex:1;text-align:center;padding:9px 6px;border-radius:8px;font-size:13px;font-weight:600;
     background:transparent;border:none;color:var(--text-dim);cursor:pointer;
   }
-  .seg-btn.active{background:var(--panel);color:var(--text);}
+  .seg-btn.active{background:var(--panel);color:var(--text);box-shadow:var(--shadow);}
 
   .card{
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);
-    padding:14px 16px;margin-bottom:12px;
+    padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);
   }
 
   /* ---------- entry form (judge view) ---------- */
   .form-row{margin-bottom:14px;}
   .form-label{font-size:12px;color:var(--text-dim);margin-bottom:6px;display:block;font-weight:600;}
-  .team-select{
-    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border-light);
-    background:var(--panel2);color:var(--text);font-size:15px;font-weight:600;appearance:none;
-  }
   .team-grid{display:flex;flex-wrap:wrap;gap:8px;}
   .team-chip{
-    padding:9px 14px;border-radius:20px;border:1px solid var(--border-light);background:var(--panel2);
+    padding:9px 14px;border-radius:20px;border:1px solid var(--border-light);background:var(--panel);
     color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;
   }
-  .team-chip.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue);}
+  .team-chip.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue-text);}
   .team-chip.has-data::after{content:" ✓";}
 
   .attempt-block{
-    border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;
+    border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;
     background:var(--panel2);
   }
   .attempt-head{font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;}
@@ -146,37 +198,27 @@
     flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-light);background:var(--panel);
     color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;text-align:center;
   }
-  .zone-btn.zone-in.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
-  .zone-btn.zone-out.active{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
-
-  .best-indicator{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:10px 12px;border-radius:8px;background:var(--green-dim);border:1px solid var(--green);
-    margin-top:4px;
-  }
-  .best-indicator.out{background:var(--amber-dim);border-color:var(--amber);}
-  .best-indicator-label{font-size:11px;color:var(--text-dim);}
-  .best-indicator-val{font-size:18px;font-weight:700;color:var(--green);}
-  .best-indicator.out .best-indicator-val{color:var(--amber);}
+  .zone-btn.zone-in.active{background:var(--green-dim);border-color:var(--green);color:var(--green-text);}
+  .zone-btn.zone-out.active{background:var(--amber-dim);border-color:var(--amber);color:var(--amber-text);}
 
   .save-btn{
     width:100%;padding:14px;border-radius:10px;border:none;background:var(--blue);color:#fff;
     font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;
   }
+  .save-btn:hover{background:#2c58c0;}
   .save-btn:active{transform:scale(0.98);}
   .save-confirm{
-    text-align:center;font-size:12px;color:var(--green);margin-top:8px;height:16px;
+    text-align:center;font-size:12px;color:var(--green-text);margin-top:8px;height:16px;
   }
 
   /* ---------- payload entry ---------- */
-  .time-input-wrap{display:flex;gap:8px;align-items:center;}
   .cond-grid{display:flex;gap:8px;}
   .cond-btn{
     flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-light);background:var(--panel);
     color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;text-align:center;
   }
-  .cond-btn.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
-  .cond-btn.bad.active{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+  .cond-btn.active{background:var(--green-dim);border-color:var(--green);color:var(--green-text);}
+  .cond-btn.bad.active{background:var(--red-dim);border-color:var(--red);color:var(--red-text);}
   .zone-grid{display:flex;gap:8px;}
 
   /* ---------- dashboard tables ---------- */
@@ -187,16 +229,17 @@
   }
   td{padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   tr:last-child td{border-bottom:none;}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);}
+  tr:hover td{background:var(--panel2);}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--panel);}
   .table-wrap table{min-width:560px;}
   .badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;}
-  .badge.in{background:var(--green-dim);color:var(--green);}
-  .badge.out{background:var(--amber-dim);color:var(--amber);}
+  .badge.in{background:var(--green-dim);color:var(--green-text);}
+  .badge.out{background:var(--amber-dim);color:var(--amber-text);}
   .badge.none{background:var(--panel2);color:var(--text-faint);}
   .rank-cell{font-weight:700;}
-  .rank-1{color:#ffd24d;}
-  .rank-2{color:#c7c7c7;}
-  .rank-3{color:#cd9456;}
+  .rank-1{color:#b8860b;}
+  .rank-2{color:#6b7280;}
+  .rank-3{color:#a16207;}
   .mark-cell{font-weight:700;color:var(--text);}
   .muted{color:var(--text-faint);}
 
@@ -206,40 +249,36 @@
 
   .stat-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   .stat-card{
-    flex:1;min-width:100px;background:var(--panel2);border-radius:var(--radius);padding:12px 14px;
+    flex:1;min-width:100px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;
+    box-shadow:var(--shadow);
   }
   .stat-card-label{font-size:11px;color:var(--text-faint);margin-bottom:4px;}
-  .stat-card-val{font-size:20px;font-weight:700;}
+  .stat-card-val{font-size:20px;font-weight:700;color:var(--text);}
 
   .add-team-row{display:flex;gap:8px;margin-bottom:14px;}
   .add-team-input{
     flex:1;padding:11px 12px;border-radius:8px;border:1px solid var(--border-light);
-    background:var(--panel2);color:var(--text);font-size:14px;
+    background:var(--panel);color:var(--text);font-size:14px;
   }
   .add-team-btn{
     padding:11px 18px;border-radius:8px;border:none;background:var(--blue);color:#fff;
     font-weight:700;font-size:14px;cursor:pointer;
   }
-  .remove-team-btn{
-    background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;padding:4px 8px;
-  }
+  .add-team-btn:hover{background:#2c58c0;}
 
   .toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-    background:var(--panel2);border:1px solid var(--border-light);color:var(--text);
+    background:var(--text);color:#fff;
     padding:10px 18px;border-radius:30px;font-size:13px;font-weight:600;z-index:200;
-    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    box-shadow:var(--shadow-md);
   }
-
-  .refresh-btn{
-    background:none;border:1px solid var(--border-light);color:var(--text-dim);
-    padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
-    display:flex;align-items:center;gap:6px;
-  }
-  .refresh-btn:active{transform:scale(0.96);}
 
   .info-note{
-    font-size:11px;color:var(--text-faint);background:var(--panel2);border-radius:8px;
+    font-size:11px;color:var(--text-dim);background:var(--blue-dim);border-radius:8px;
+    padding:10px 12px;margin-bottom:14px;line-height:1.5;
+  }
+  .warn-note{
+    font-size:11px;color:var(--amber-text);background:var(--amber-dim);border-radius:8px;
     padding:10px 12px;margin-bottom:14px;line-height:1.5;
   }
 
@@ -247,25 +286,32 @@
     display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--text-dim);font-size:13px;
   }
 
-  /* ---------- setup screen ---------- */
-  .setup-screen{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-height:100vh;padding:24px;gap:14px;
+  /* ---------- admin: pending approval list ---------- */
+  .pending-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;box-shadow:var(--shadow);
   }
-  .setup-box{
-    width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);
-    border-radius:var(--radius-lg);padding:24px;
+  .pending-user{display:flex;align-items:center;gap:10px;}
+  .pending-name{font-size:14px;font-weight:600;color:var(--text);}
+  .pending-email{font-size:12px;color:var(--text-faint);}
+  .role-assign-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .assign-btn{
+    padding:8px 12px;border-radius:8px;border:1px solid var(--border-light);background:var(--panel);
+    font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;
   }
-  .setup-box h1{font-size:18px;margin:0 0 8px;}
-  .setup-box p{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 14px;}
-  .setup-box ol{font-size:13px;color:var(--text-dim);line-height:1.8;margin:0 0 16px;padding-left:20px;}
-  .setup-box a{color:var(--blue);}
-  .setup-textarea{
-    width:100%;min-height:110px;padding:12px;border-radius:8px;border:1px solid var(--border-light);
-    background:var(--panel2);color:var(--text);font-size:13px;font-family:monospace;margin-bottom:12px;
-    resize:vertical;
+  .assign-btn:hover{background:var(--panel2);}
+  .assign-btn.assign-rm:hover{background:var(--green-dim);border-color:var(--green);color:var(--green-text);}
+  .assign-btn.assign-r1:hover{background:var(--blue-dim);border-color:var(--blue);color:var(--blue-text);}
+  .assign-btn.assign-r2:hover{background:var(--amber-dim);border-color:var(--amber);color:var(--amber-text);}
+  .assign-btn.assign-deny:hover{background:var(--red-dim);border-color:var(--red);color:var(--red-text);}
+
+  .assigned-user-row{
+    display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);
+    gap:10px;flex-wrap:wrap;
   }
-  .setup-error{color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px;}
+  .assigned-user-row:last-child{border-bottom:none;}
+  .remove-link{font-size:12px;color:var(--red-text);cursor:pointer;background:none;border:none;font-weight:600;}
 
   ::-webkit-scrollbar{height:6px;width:6px;}
   ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
@@ -275,53 +321,44 @@
 <div id="app"><div class="loading-screen">Memuatkan...</div></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-/* ====================== FIREBASE SETUP ====================== */
+/* ====================== FIREBASE CONFIG (fixed for this deployment) ====================== */
 
-const FIREBASE_CONFIG_KEY = 'wrc_firebase_config';
-let firebaseApp = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCBCDIzI-1EXxXcTMb6Oat0rb7OykjtHaM",
+  authDomain: "rockets-436d8.firebaseapp.com",
+  databaseURL: "https://rockets-436d8-default-rtdb.firebaseio.com",
+  projectId: "rockets-436d8",
+  storageBucket: "rockets-436d8.firebasestorage.app",
+  messagingSenderId: "636055704915",
+  appId: "1:636055704915:web:2b61efedeb1b8b7abbfda6",
+  measurementId: "G-FJDZPKNRQ8"
+};
+
+const ADMIN_EMAILS = ["g-41275961@moe-dl.edu.my", "amirsyah.1989@gmail.com"];
+function isAdminEmail(email){ return ADMIN_EMAILS.includes(email); }
+
 let dbRef = null;
-let firebaseReady = false;
+let authRef = null;
+let currentUser = null; // {uid, email, displayName, photoURL}
 
-function getSavedConfig(){
+function initFirebase(){
   try{
-    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){ return null; }
-}
-
-function saveConfig(cfg){
-  localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(cfg));
-}
-
-function clearConfig(){
-  localStorage.removeItem(FIREBASE_CONFIG_KEY);
-}
-
-async function initFirebase(config){
-  if(typeof firebase === 'undefined'){
-    console.error('Firebase SDK belum dimuat');
-    firebaseReady = false;
-    return false;
-  }
-  try{
-    // Delete existing app first (async) to allow fresh init
-    if(firebase.apps.length){
-      try{ await firebase.app().delete(); }catch(e){}
+    if(!firebase.apps.length){
+      firebase.initializeApp(FIREBASE_CONFIG);
     }
-    firebaseApp = firebase.initializeApp(config);
     dbRef = firebase.database();
-    firebaseReady = true;
+    authRef = firebase.auth();
     return true;
   }catch(e){
-    console.error('Firebase init error', e.code, e.message);
-    firebaseReady = false;
+    console.error('Firebase init error', e);
     return false;
   }
 }
 
-/* ====================== CONFIG / CONSTANTS ====================== */
+/* ====================== SCORING CONSTANTS & LOGIC (unchanged, proven) ====================== */
 
 const RANK_MARKS = [60,56,52,48,44,40,36,32,28,24,20,16,12,8,4,2];
 function markForRank(rank){ return rank>=1 && rank<=RANK_MARKS.length ? RANK_MARKS[rank-1] : 0; }
@@ -337,17 +374,19 @@ const CATEGORY_LABELS = {
 /* ====================== STATE ====================== */
 
 let state = {
-  phase: 'loading', // 'setup' | 'role-select' | 'app'
-  role: null, // 'judge1' | 'judge2' | 'main'
-  category: 'SR', // SR or SM, for judge views
-  teams: [], // {id, name}
-  targetData: {}, // key: `${category}_${teamId}_${dist}` -> {attempt1:{distance,zone}, attempt2:{distance,zone}}
-  payloadData: {}, // key: `${category}_${teamId}` -> {time, condition, zone}
+  phase: 'loading', // 'loading' | 'login' | 'waiting-approval' | 'app'
+  role: null, // 'judge1' | 'judge2' | 'main' | 'admin'
+  category: 'SR',
+  teams: [],
+  targetData: {},
+  payloadData: {},
+  pendingUsers: {}, // uid -> {email, displayName, photoURL, requestedAt}
+  approvedUsers: {}, // uid -> {email, displayName, photoURL, role}
 };
 
 let isSyncing = false;
-let selectedTeamId = null; // currently open team in judge entry view
-let payloadFormFocused = false; // true while a payload time/condition input has focus on main view
+let selectedTeamId = null;
+let payloadFormFocused = false;
 
 function isEntryFormOpen(){
   if(state.role==='judge1' || state.role==='judge2'){
@@ -359,91 +398,11 @@ function isEntryFormOpen(){
   return false;
 }
 
-/* ====================== STORAGE HELPERS (FIREBASE) ====================== */
-
-const TEAMS_PATH = 'teams';
-const TARGET_PATH = 'targetData';
-const PAYLOAD_PATH = 'payloadData';
-
-let listenersAttached = false;
-
-function attachListeners(onUpdate){
-  if(listenersAttached || !dbRef) return;
-  listenersAttached = true;
-
-  // Team list changes are safe to re-render immediately for everyone.
-  dbRef.ref(TEAMS_PATH).on('value', snap=>{
-    const val = snap.val();
-    state.teams = val ? Object.values(val) : [];
-    onUpdate();
-  });
-
-  // Judges actively typing distances should not have their in-progress entry
-  // wiped by a re-render triggered from another judge's update. Update the
-  // underlying state silently; the judge's own save action re-renders safely.
-  // The Hakim Utama dashboard (read-only for target data) always re-renders live.
-  dbRef.ref(TARGET_PATH).on('value', snap=>{
-    state.targetData = snap.val() || {};
-    if(state.role === 'main' || !isEntryFormOpen()) onUpdate();
-  });
-  dbRef.ref(PAYLOAD_PATH).on('value', snap=>{
-    state.payloadData = snap.val() || {};
-    if(!isEntryFormOpen()) onUpdate();
-  });
-}
-
-function sanitizeKey(k){
-  // Firebase RTDB keys cannot contain . $ # [ ] /  (defensive, keys are already safe by construction)
-  return String(k).replace(/[.$#\[\]\/]/g, '_');
-}
-
-async function saveTeams(){
-  if(!dbRef) return;
-  setSyncing(true);
-  try{
-    const obj = {};
-    state.teams.forEach(t=> obj[t.id] = t);
-    await dbRef.ref(TEAMS_PATH).set(obj);
-  }catch(e){ console.error('saveTeams error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
-  setSyncing(false);
-}
-
-async function saveTargetEntry(key, entry){
-  if(!dbRef) return;
-  setSyncing(true);
-  try{
-    await dbRef.ref(TARGET_PATH + '/' + key).set(entry);
-  }catch(e){ console.error('saveTargetEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
-  setSyncing(false);
-}
-
-async function savePayloadEntry(key, entry){
-  if(!dbRef) return;
-  setSyncing(true);
-  try{
-    await dbRef.ref(PAYLOAD_PATH + '/' + key).set(entry);
-  }catch(e){ console.error('savePayloadEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
-  setSyncing(false);
-}
-
-function setSyncing(v){
-  isSyncing = v;
-  const dot = document.querySelector('.sync-dot');
-  if(dot) dot.classList.toggle('syncing', v);
-}
-
-/* ====================== UTILITIES ====================== */
-
-function teamKey(cat, teamId, dist){ return `${cat}_${teamId}_${dist}`; }
-function payloadKey(cat, teamId){ return `${cat}_${teamId}`; }
-
 function getBestAttempt(entry){
-  // entry: {attempt1:{distance,zone}, attempt2:{distance,zone}}
   if(!entry) return null;
   const a1 = entry.attempt1, a2 = entry.attempt2;
   const valid = [a1,a2].filter(a => a && a.distance !== '' && a.distance !== null && a.distance !== undefined);
   if(valid.length===0) return null;
-  // prefer "dalam zon" over "luar zon"; within same zone, smaller distance wins
   valid.sort((x,y)=>{
     if(x.zone !== y.zone) return x.zone==='in' ? -1 : 1;
     return parseFloat(x.distance) - parseFloat(y.distance);
@@ -451,8 +410,10 @@ function getBestAttempt(entry){
   return valid[0];
 }
 
+function teamKey(cat, teamId, dist){ return `${cat}_${teamId}_${dist}`; }
+function payloadKey(cat, teamId){ return `${cat}_${teamId}`; }
+
 function computeTargetRanking(category, dist){
-  // returns array of {teamId, teamName, best, rank, mark} sorted by rank
   const rows = state.teams.map(t=>{
     const entry = state.targetData[teamKey(category, t.id, dist)];
     const best = getBestAttempt(entry);
@@ -502,17 +463,17 @@ function computePayloadRanking(category){
     return { teamId:t.id, teamName:t.name, data:d };
   }).filter(r=> r.data && r.data.time !== '' && r.data.time !== null && r.data.time !== undefined);
 
-  rows.sort((a,b)=> parseFloat(b.data.time) - parseFloat(a.data.time)); // longest time best
+  rows.sort((a,b)=> parseFloat(b.data.time) - parseFloat(a.data.time));
 
   rows.forEach((r,i)=>{
     r.rank = i+1;
-    const timeMark = payloadMarkForRank(r.rank); // out of 25
-    const condMark = r.data.condition==='baik' ? 8 : 0; // out of 8
-    const zoneMark = r.data.zone==='in' ? 7 : 0; // out of 7
+    const timeMark = payloadMarkForRank(r.rank);
+    const condMark = r.data.condition==='baik' ? 8 : 0;
+    const zoneMark = r.data.zone==='in' ? 7 : 0;
     r.timeMark = timeMark;
     r.condMark = condMark;
     r.zoneMark = zoneMark;
-    r.total = timeMark + condMark + zoneMark; // out of 40
+    r.total = timeMark + condMark + zoneMark;
   });
   return rows;
 }
@@ -522,14 +483,13 @@ function computeFinalStandings(category){
   const payloadRows = computePayloadRanking(category);
   const payloadMap = {}; payloadRows.forEach(r=> payloadMap[r.teamId]=r);
 
-  // Need ranks for A (target, 60%) and B (payload, 40%) -- per spec these are RANK-based marks already (avgMark IS the markah, out of 60)
   const allTeamIds = state.teams.map(t=>t.id);
   const rows = allTeamIds.map(id=>{
     const t = state.teams.find(x=>x.id===id);
     const tgt = targetRes.ranked.find(r=>r.teamId===id);
     const pay = payloadMap[id];
-    const markA = tgt ? tgt.avgMark : 0; // out of 60
-    const markB = pay ? pay.total : 0; // out of 40
+    const markA = tgt ? tgt.avgMark : 0;
+    const markB = pay ? pay.total : 0;
     const total = markA + markB;
     return {
       teamId:id, teamName:t.name,
@@ -552,6 +512,136 @@ function fmtNum(n, decimals=1){
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(decimals);
 }
 
+/* ====================== AUTH ====================== */
+
+function signInWithGoogle(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  return authRef.signInWithPopup(provider);
+}
+
+function signOut(){
+  listenersAttached = false;
+  return authRef.signOut();
+}
+
+async function registerPendingUser(user){
+  // Write/update a pending request entry, unless already approved
+  const existing = state.approvedUsers[user.uid];
+  if(existing) return;
+  try{
+    await dbRef.ref('pendingUsers/' + user.uid).set({
+      email: user.email,
+      displayName: user.displayName || user.email,
+      photoURL: user.photoURL || '',
+      requestedAt: Date.now()
+    });
+  }catch(e){ console.error('registerPendingUser error', e); }
+}
+
+async function approveUser(uid, role){
+  try{
+    const pending = state.pendingUsers[uid];
+    if(!pending) return;
+    await dbRef.ref('approvedUsers/' + uid).set({
+      email: pending.email,
+      displayName: pending.displayName,
+      photoURL: pending.photoURL || '',
+      role: role
+    });
+    await dbRef.ref('pendingUsers/' + uid).remove();
+    showToast('Peranan diberikan kepada ' + pending.displayName);
+  }catch(e){ console.error('approveUser error', e); showToast('Ralat — semak sambungan'); }
+}
+
+async function denyUser(uid){
+  try{
+    await dbRef.ref('pendingUsers/' + uid).remove();
+  }catch(e){ console.error('denyUser error', e); }
+}
+
+async function removeApprovedUser(uid){
+  try{
+    await dbRef.ref('approvedUsers/' + uid).remove();
+    showToast('Akses dibuang');
+  }catch(e){ console.error('removeApprovedUser error', e); }
+}
+
+/* ====================== STORAGE HELPERS (FIREBASE RTDB) ====================== */
+
+const TEAMS_PATH = 'teams';
+const TARGET_PATH = 'targetData';
+const PAYLOAD_PATH = 'payloadData';
+
+let listenersAttached = false;
+
+function attachListeners(onUpdate){
+  if(listenersAttached || !dbRef) return;
+  listenersAttached = true;
+
+  dbRef.ref(TEAMS_PATH).on('value', snap=>{
+    const val = snap.val();
+    state.teams = val ? Object.values(val) : [];
+    onUpdate();
+  });
+
+  dbRef.ref(TARGET_PATH).on('value', snap=>{
+    state.targetData = snap.val() || {};
+    if(state.role === 'main' || state.role === 'admin' || !isEntryFormOpen()) onUpdate();
+  });
+  dbRef.ref(PAYLOAD_PATH).on('value', snap=>{
+    state.payloadData = snap.val() || {};
+    if(!isEntryFormOpen()) onUpdate();
+  });
+
+  if(state.role === 'admin'){
+    dbRef.ref('pendingUsers').on('value', snap=>{
+      state.pendingUsers = snap.val() || {};
+      onUpdate();
+    });
+    dbRef.ref('approvedUsers').on('value', snap=>{
+      state.approvedUsers = snap.val() || {};
+      onUpdate();
+    });
+  }
+}
+
+async function saveTeams(){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    const obj = {};
+    state.teams.forEach(t=> obj[t.id] = t);
+    await dbRef.ref(TEAMS_PATH).set(obj);
+  }catch(e){ console.error('saveTeams error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+async function saveTargetEntry(key, entry){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    await dbRef.ref(TARGET_PATH + '/' + key).set(entry);
+  }catch(e){ console.error('saveTargetEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+async function savePayloadEntry(key, entry){
+  if(!dbRef) return;
+  setSyncing(true);
+  try{
+    await dbRef.ref(PAYLOAD_PATH + '/' + key).set(entry);
+  }catch(e){ console.error('savePayloadEntry error', e); showToast('Ralat menyimpan — semak sambungan internet'); }
+  setSyncing(false);
+}
+
+function setSyncing(v){
+  isSyncing = v;
+  const dot = document.querySelector('.sync-dot');
+  if(dot) dot.classList.toggle('syncing', v);
+}
+
+/* ====================== UTIL ====================== */
+
 function showToast(msg){
   const existing = document.querySelector('.toast');
   if(existing) existing.remove();
@@ -562,181 +652,106 @@ function showToast(msg){
   setTimeout(()=> el.remove(), 1800);
 }
 
-/* ====================== RENDER: ROOT ====================== */
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function avatarHtml(user, size){
+  size = size || 26;
+  if(user && user.photoURL){
+    return `<div class="user-avatar" style="width:${size}px;height:${size}px;"><img src="${user.photoURL}" alt=""></div>`;
+  }
+  const initial = (user && (user.displayName||user.email) || '?').charAt(0).toUpperCase();
+  return `<div class="user-avatar" style="width:${size}px;height:${size}px;">${initial}</div>`;
+}
+
+/* ====================== RENDER: ROOT / AUTH FLOW ====================== */
 
 function render(){
   const app = document.getElementById('app');
 
-  if(state.phase==='setup'){
-    app.innerHTML = renderSetupScreen();
-    bindSetupScreen();
+  if(state.phase === 'loading'){
+    app.innerHTML = '<div class="loading-screen">Memuatkan...</div>';
     return;
   }
 
-  if(state.phase==='role-select' || !state.role){
-    app.innerHTML = renderRoleSelect();
-    bindRoleSelect();
+  if(state.phase === 'login'){
+    app.innerHTML = renderLoginScreen();
+    bindLoginScreen();
     return;
   }
 
+  if(state.phase === 'waiting-approval'){
+    app.innerHTML = renderWaitingScreen();
+    bindWaitingScreen();
+    return;
+  }
+
+  // phase === 'app'
   app.innerHTML = renderTopbar() + renderBody();
   bindGlobal();
   if(state.role==='judge1') bindJudgeView(CATEGORY_LABELS[state.category].d1);
   if(state.role==='judge2') bindJudgeView(CATEGORY_LABELS[state.category].d2);
   if(state.role==='main') bindMainView();
+  if(state.role==='admin') bindAdminView();
 }
 
-function renderSetupScreen(){
+function renderLoginScreen(){
   return `
-    <div class="setup-screen">
-      <div class="setup-box">
-        <h1>Sediakan sambungan Firebase</h1>
-        <p>Tampal config Firebase awak di bawah. Boleh salin terus dari Firebase Console — format <code>const firebaseConfig = {...}</code> atau JSON <code>{...}</code> kedua-dua diterima.</p>
-        <ol>
-          <li>Pergi ke <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → pilih projek</li>
-          <li>Klik ikon gear ⚙️ → <b>Project settings</b> → scroll ke bawah ke "Your apps"</li>
-          <li>Klik tab <b>Config</b> → salin keseluruhan blok kod yang muncul</li>
-          <li>Tampal di bawah dan klik "Sambung"</li>
-        </ol>
-        <p style="color:var(--amber);font-size:12px;margin:0 0 10px;">⚠️ Pastikan Realtime Database sudah diaktifkan dan tab Rules ditetapkan kepada <b>test mode</b> (.read: true, .write: true)</p>
-        <textarea class="setup-textarea" id="config-input" placeholder='{
-  "apiKey": "...",
-  "authDomain": "...",
-  "databaseURL": "https://....firebaseio.com",
-  "projectId": "...",
-  ...
-}'></textarea>
-        <div class="setup-error" id="setup-error"></div>
-        <button class="save-btn" id="setup-submit">Sambung & teruskan</button>
+    <div class="login-screen">
+      <div class="login-box">
+        <div class="login-icon">🚀</div>
+        <h1>Water Rocket Challenge</h1>
+        <p>Karnival STEM Peringkat Kebangsaan 2026<br>Sistem Pemarkahan</p>
+        <button class="google-btn" id="google-signin-btn">
+          <svg class="google-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+          Log masuk dengan Google
+        </button>
       </div>
     </div>
   `;
 }
 
-function bindSetupScreen(){
-  document.getElementById('setup-submit').addEventListener('click', async ()=>{
-    const raw = document.getElementById('config-input').value.trim();
-    const errEl = document.getElementById('setup-error');
-    const btn = document.getElementById('setup-submit');
-    errEl.textContent = '';
-
-    let parsed;
+function bindLoginScreen(){
+  document.getElementById('google-signin-btn').addEventListener('click', async ()=>{
     try{
-      // Accept both raw JSON object and "const firebaseConfig = {...};" format
-      let jsonStr = raw;
-      const match = raw.match(/firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;?\s*$/);
-      if(match) jsonStr = match[1];
-      // replace JS-style keys (unquoted) with quoted keys for JSON.parse
-      // Only match keys at start of object entries, not colons inside string values
-      jsonStr = jsonStr.replace(/([{,\n]\s*)([a-zA-Z_]\w*)(\s*):/g, '$1"$2"$3:');
-      // remove trailing commas
-      jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-      parsed = JSON.parse(jsonStr);
+      await signInWithGoogle();
     }catch(e){
-      errEl.textContent = 'Format tidak sah: ' + e.message + '. Cuba salin hanya bahagian { ... } sahaja.';
-      return;
+      console.error('Sign in error', e);
+      showToast('Gagal log masuk: ' + (e.message || e.code));
     }
-
-    if(!parsed.databaseURL){
-      errEl.textContent = 'Tiada "databaseURL" dalam config. Pastikan Realtime Database sudah diaktifkan dan URL database disertakan.';
-      return;
-    }
-
-    // Reset Firebase if already initialized (handled inside initFirebase)
-    if(typeof firebase === 'undefined'){
-      errEl.textContent = 'Pustaka Firebase belum siap dimuat. Tunggu beberapa saat dan cuba lagi (atau muat semula halaman).';
-      return;
-    }
-    const ok = await initFirebase(parsed);
-    if(!ok){
-      errEl.textContent = 'Gagal init Firebase. Semak semula config — pastikan apiKey, projectId dan databaseURL betul.';
-      return;
-    }
-
-    // Test actual DB connection
-    btn.textContent = 'Menguji sambungan...';
-    btn.disabled = true;
-    errEl.style.color = 'var(--text-dim)';
-    errEl.textContent = 'Menghubungi database...';
-
-    try{
-      await dbRef.ref('.info/connected').once('value');
-      // Try a test write to verify rules allow access
-      await dbRef.ref('_connectionTest').set({ ts: Date.now() });
-      await dbRef.ref('_connectionTest').remove();
-    }catch(e){
-      btn.textContent = 'Sambung & teruskan';
-      btn.disabled = false;
-      errEl.style.color = 'var(--red)';
-      if(e.code === 'PERMISSION_DENIED'){
-        errEl.textContent = 'Berjaya sambung ke Firebase, TAPI Security Rules menolak akses. Pergi ke Realtime Database → tab "Rules" → tukar kepada: { "rules": { ".read": true, ".write": true } } → klik Publish.';
-      } else {
-        errEl.textContent = 'Ralat sambungan: ' + (e.message || e.code || JSON.stringify(e));
-      }
-      return;
-    }
-
-    errEl.style.color = 'var(--green)';
-    errEl.textContent = 'Berjaya disambungkan ✓';
-    saveConfig(parsed);
-    setTimeout(()=>{
-      state.phase = 'role-select';
-      render();
-    }, 800);
   });
 }
 
-function renderRoleSelect(){
+function renderWaitingScreen(){
+  const u = currentUser;
   return `
-    <div class="role-select">
-      <h1>Water Rocket Challenge</h1>
-      <p>Karnival STEM Peringkat Kebangsaan 2026 — Sistem Pemarkahan. Pilih peranan anda untuk pertandingan ini.</p>
-      <div class="role-card" data-role="judge1">
-        <div class="role-icon r1">S1</div>
-        <div>
-          <p class="role-card-title">Hakim Sasaran 1</p>
-          <p class="role-card-desc">Rekod jarak pelancaran untuk Jarak Sasaran 1 (60m / 70m)</p>
-        </div>
+    <div class="login-screen">
+      <div class="waiting-box">
+        <div class="waiting-icon">⏳</div>
+        <h2>Menunggu kelulusan</h2>
+        <p>Akaun anda sudah didaftarkan. Sila tunggu admin melantik peranan anda (Hakim Utama / Hakim Sasaran 1 / Hakim Sasaran 2).</p>
+        <div class="waiting-email">${escapeHtml(u ? u.email : '')}</div>
+        <p style="margin-top:14px;">Halaman ini akan kemas kini automatik selepas peranan diberikan.</p>
+        <button class="icon-btn" id="waiting-signout-btn" style="margin-top:16px;">Log keluar</button>
       </div>
-      <div class="role-card" data-role="judge2">
-        <div class="role-icon r2">S2</div>
-        <div>
-          <p class="role-card-title">Hakim Sasaran 2</p>
-          <p class="role-card-desc">Rekod jarak pelancaran untuk Jarak Sasaran 2 (70m / 80m)</p>
-        </div>
-      </div>
-      <div class="role-card" data-role="main">
-        <div class="role-icon rm">U</div>
-        <div>
-          <p class="role-card-title">Hakim Utama</p>
-          <p class="role-card-desc">Pantau & selaraskan kedua-dua sasaran, papan markah penuh, payung terjun berbeban</p>
-        </div>
-      </div>
-      <button class="switch-role" id="reset-config" style="margin-top:10px;">Tukar sambungan Firebase</button>
     </div>
   `;
 }
 
-function bindRoleSelect(){
-  document.querySelectorAll('.role-card').forEach(card=>{
-    card.addEventListener('click', ()=>{
-      state.role = card.dataset.role;
-      state.phase = 'app';
-      render();
-      attachListeners(render);
-    });
-  });
-  const resetBtn = document.getElementById('reset-config');
-  if(resetBtn) resetBtn.addEventListener('click', ()=>{
-    clearConfig();
-    state.phase = 'setup';
-    render();
+function bindWaitingScreen(){
+  document.getElementById('waiting-signout-btn').addEventListener('click', async ()=>{
+    await signOut();
   });
 }
 
 function renderTopbar(){
-  const roleLabel = state.role==='judge1' ? 'Hakim Sasaran 1' : state.role==='judge2' ? 'Hakim Sasaran 2' : 'Hakim Utama';
-  const roleClass = state.role==='judge1' ? 'r1' : state.role==='judge2' ? 'r2' : 'rm';
+  const roleLabels = { judge1:'Hakim Sasaran 1', judge2:'Hakim Sasaran 2', main:'Hakim Utama', admin:'Admin' };
+  const roleClasses = { judge1:'r1', judge2:'r2', main:'rm', admin:'radm' };
+  const roleLabel = roleLabels[state.role] || '';
+  const roleClass = roleClasses[state.role] || '';
   return `
     <div class="topbar">
       <div class="topbar-left">
@@ -745,21 +760,20 @@ function renderTopbar(){
           <div class="topbar-sub">Karnival STEM Kebangsaan 2026</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
         <span class="sync-pill"><span class="sync-dot"></span>Sync</span>
         <span class="role-badge ${roleClass}">${roleLabel}</span>
-        <button class="switch-role" id="btn-switch-role">Tukar</button>
+        ${avatarHtml(currentUser, 26)}
+        <button class="icon-btn" id="btn-signout">Log keluar</button>
       </div>
     </div>
   `;
 }
 
 function bindGlobal(){
-  const btn = document.getElementById('btn-switch-role');
-  if(btn) btn.addEventListener('click', ()=>{
-    state.role = null;
-    state.phase = 'role-select';
-    render();
+  const btn = document.getElementById('btn-signout');
+  if(btn) btn.addEventListener('click', async ()=>{
+    await signOut();
   });
 }
 
@@ -767,8 +781,95 @@ function renderBody(){
   if(state.role==='judge1') return renderJudgeView(1);
   if(state.role==='judge2') return renderJudgeView(2);
   if(state.role==='main') return renderMainView();
+  if(state.role==='admin') return adminDashboardMode ? renderMainView() : renderAdminView();
   return '';
 }
+
+/* ====================== ADMIN VIEW ====================== */
+
+function renderAdminView(){
+  const pendingList = Object.entries(state.pendingUsers || {});
+  const approvedList = Object.entries(state.approvedUsers || {}).filter(([uid,u])=> !isAdminEmail(u.email));
+
+  return `
+    <div class="section">
+      <div class="info-note">Sebagai admin, anda melantik peranan untuk setiap hakim yang log masuk. Hakim yang belum dilantik akan menunggu di sini.</div>
+
+      <div class="section-title">Permohonan menunggu (${pendingList.length})</div>
+      ${pendingList.length===0 ? '<div class="empty-state">Tiada permohonan baharu.</div>' :
+        pendingList.map(([uid, u])=>`
+          <div class="pending-card">
+            <div class="pending-user">
+              ${avatarHtml(u, 36)}
+              <div>
+                <div class="pending-name">${escapeHtml(u.displayName||u.email)}</div>
+                <div class="pending-email">${escapeHtml(u.email)}</div>
+              </div>
+            </div>
+            <div class="role-assign-row">
+              <button class="assign-btn assign-rm" data-uid="${uid}" data-role="main">Hakim Utama</button>
+              <button class="assign-btn assign-r1" data-uid="${uid}" data-role="judge1">Hakim Sasaran 1</button>
+              <button class="assign-btn assign-r2" data-uid="${uid}" data-role="judge2">Hakim Sasaran 2</button>
+              <button class="assign-btn assign-deny" data-uid="${uid}" data-role="deny">Tolak</button>
+            </div>
+          </div>
+        `).join('')}
+
+      <div class="section-title">Hakim yang dilantik (${approvedList.length})</div>
+      <div class="card">
+        ${approvedList.length===0 ? '<div class="empty-state">Belum ada hakim dilantik.</div>' :
+          approvedList.map(([uid, u])=>{
+            const roleLabels = { judge1:'Hakim Sasaran 1', judge2:'Hakim Sasaran 2', main:'Hakim Utama' };
+            return `
+            <div class="assigned-user-row">
+              <div class="pending-user">
+                ${avatarHtml(u, 32)}
+                <div>
+                  <div class="pending-name">${escapeHtml(u.displayName||u.email)}</div>
+                  <div class="pending-email">${escapeHtml(u.email)} — ${roleLabels[u.role]||u.role}</div>
+                </div>
+              </div>
+              <button class="remove-link" data-remove-uid="${uid}">Buang akses</button>
+            </div>
+          `;}).join('')}
+      </div>
+
+      <div class="section-title">Pengurusan pasukan & papan markah</div>
+      <div class="info-note">Sebagai admin, anda juga boleh lihat papan markah penuh seperti Hakim Utama.</div>
+      <button class="save-btn" id="admin-view-dashboard" style="background:var(--green);">Lihat Papan Markah Penuh</button>
+    </div>
+  `;
+}
+
+function bindAdminView(){
+  document.querySelectorAll('.assign-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const uid = btn.dataset.uid;
+      const role = btn.dataset.role;
+      if(role === 'deny'){
+        await denyUser(uid);
+        showToast('Permohonan ditolak');
+      } else {
+        await approveUser(uid, role);
+      }
+    });
+  });
+  document.querySelectorAll('[data-remove-uid]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const uid = btn.dataset.removeUid;
+      if(confirm('Buang akses hakim ini?')){
+        await removeApprovedUser(uid);
+      }
+    });
+  });
+  const dashBtn = document.getElementById('admin-view-dashboard');
+  if(dashBtn) dashBtn.addEventListener('click', ()=>{
+    adminDashboardMode = true;
+    render();
+  });
+}
+
+let adminDashboardMode = false;
 
 /* ====================== JUDGE VIEW (Sasaran 1 / Sasaran 2) ====================== */
 
@@ -923,6 +1024,11 @@ function bindTeamManager(){
 function renderMainView(){
   return `
     <div class="section">
+      ${state.role==='admin' ? `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="icon-btn" id="back-to-admin">← Balik ke Panel Admin</button>
+      </div>` : ''}
+
       <div class="seg-control" id="cat-seg">
         <button class="seg-btn ${state.category==='SR'?'active':''}" data-cat="SR">Sekolah Rendah</button>
         <button class="seg-btn ${state.category==='SM'?'active':''}" data-cat="SM">Sekolah Menengah</button>
@@ -936,7 +1042,7 @@ function renderMainView(){
       </div>
 
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <button class="refresh-btn" id="refresh-now">↻ Muat semula</button>
+        <button class="icon-btn" id="refresh-now">↻ Muat semula</button>
       </div>
 
       <div id="main-content">${renderMainSubView()}</div>
@@ -963,6 +1069,11 @@ function bindMainView(){
   });
   document.getElementById('refresh-now').addEventListener('click', ()=>{
     showToast('Data terkini (sync automatik aktif)');
+    render();
+  });
+  const backBtn = document.getElementById('back-to-admin');
+  if(backBtn) backBtn.addEventListener('click', ()=>{
+    adminDashboardMode = false;
     render();
   });
   if(mainSubView==='payload') bindPayloadEntry();
@@ -1173,23 +1284,66 @@ function renderFinalStandings(){
   `;
 }
 
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+/* ====================== INIT / AUTH STATE LISTENER ====================== */
+
+function handleAuthenticatedUser(user){
+  currentUser = { uid:user.uid, email:user.email, displayName:user.displayName, photoURL:user.photoURL };
+
+  if(isAdminEmail(user.email)){
+    state.role = 'admin';
+    state.phase = 'app';
+    attachListeners(render);
+    render();
+    return;
+  }
+
+  // Check approved role from DB
+  dbRef.ref('approvedUsers/' + user.uid).once('value').then(snap=>{
+    const approved = snap.val();
+    if(approved && approved.role){
+      state.role = approved.role;
+      state.phase = 'app';
+      attachListeners(render);
+      render();
+    } else {
+      state.phase = 'waiting-approval';
+      render();
+      registerPendingUser(user);
+      // Listen for approval changes live
+      dbRef.ref('approvedUsers/' + user.uid).on('value', s=>{
+        const v = s.val();
+        if(v && v.role && state.phase === 'waiting-approval'){
+          state.role = v.role;
+          state.phase = 'app';
+          attachListeners(render);
+          render();
+        }
+      });
+    }
+  }).catch(e=>{
+    console.error('Role check error', e);
+    showToast('Ralat menyemak peranan — semak sambungan internet');
+  });
 }
 
-/* ====================== INIT ====================== */
-
-(async function init(){
-  const saved = getSavedConfig();
-  if(saved){
-    const ok = await initFirebase(saved);
-    state.phase = ok ? 'role-select' : 'setup';
-  } else {
-    state.phase = 'setup';
+(function init(){
+  const ok = initFirebase();
+  if(!ok){
+    document.getElementById('app').innerHTML = '<div class="loading-screen">Ralat memulakan sistem. Sila muat semula halaman.</div>';
+    return;
   }
-  render();
+
+  authRef.onAuthStateChanged(user=>{
+    if(user){
+      handleAuthenticatedUser(user);
+    } else {
+      currentUser = null;
+      state.role = null;
+      state.phase = 'login';
+      listenersAttached = false;
+      render();
+    }
+  });
 })();
 </script>
 </body>
