@@ -1026,6 +1026,27 @@ let adminDashboardMode = false;
 
 /* ====================== JUDGE VIEW (Sasaran 1 / Sasaran 2) ====================== */
 
+function renderTargetRankTable(lockedCategory, dist){
+  const rows = computeTargetRanking(lockedCategory, dist);
+  if(rows.length===0) return '';
+
+  const rankRows = rows.map(r =>
+    '<tr>' +
+    '<td class="rank-cell ' + (r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':'') + '">' + r.rank + '</td>' +
+    '<td>' + escapeHtml(r.teamName) + '</td>' +
+    '<td>' + r.best.distance + ' m</td>' +
+    '<td><span class="badge ' + (r.best.zone==='in'?'in':'out') + '">' + (r.best.zone==='in'?'Dalam':'Luar') + '</span></td>' +
+    '<td class="mark-cell">' + r.mark + '</td>' +
+    '</tr>'
+  ).join('');
+
+  return '<div class="section-title">Kedudukan Semasa — Jarak ' + dist + 'm</div>' +
+    '<div class="table-wrap"><table>' +
+    '<thead><tr><th>Kedudukan</th><th>Sekolah</th><th>Jarak terbaik</th><th>Zon</th><th>Markah</th></tr></thead>' +
+    '<tbody>' + rankRows + '</tbody>' +
+    '</table></div>';
+}
+
 function renderJudgeView(judgeNum, lockedCategory){
   const cfg = CATEGORY_LABELS[lockedCategory];
   const dist = judgeNum===1 ? cfg.d1 : cfg.d2;
@@ -1059,6 +1080,7 @@ function renderJudgeView(judgeNum, lockedCategory){
     + (state.teams.length===0 ? noTeams
         : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
     + '<div id="entry-area"></div>'
+    + renderTargetRankTable(lockedCategory, dist)
     + '</div>';
 }
 
