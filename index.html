@@ -1389,67 +1389,116 @@ function renderPayloadEntryArea(){
   if(!payloadSelectedTeamId){ area.innerHTML=''; return; }
   const team = state.teams.find(t=>t.id===payloadSelectedTeamId);
   if(!team){ area.innerHTML=''; return; }
-  const key = payloadKey(state.category, payloadSelectedTeamId);
-  const entry = state.payloadData[key] || { attempt1:{time:'',condition:'baik',zone:'in'}, attempt2:{time:'',condition:'baik',zone:'in'} };
+
+  // Use locked category for judges, state.category for main/admin
+  const judgeInfo = parseJudgeRole(state.role);
+  const cat = judgeInfo ? judgeInfo.category : state.category;
+  const key = payloadKey(cat, payloadSelectedTeamId);
+  const entry = state.payloadData[key] || {
+    attempt1:{time:'',condition:'baik',zone:'in'},
+    attempt2:{time:'',condition:'baik',zone:'in'}
+  };
+
+  const pesertaHtml = (team.peserta1||team.peserta2) ? `
+    <div class="info-note" style="margin-bottom:12px;">
+      👤 ${escapeHtml(team.peserta1||'—')} &nbsp;|&nbsp; 👤 ${escapeHtml(team.peserta2||'—')}
+    </div>` : '';
+
+  // Render 2 attempt blocks
+  let blocksHtml = '';
+  for(let n=1; n<=2; n++){
+    const a = entry['attempt'+n] || {time:'',condition:'baik',zone:'in'};
+    blocksHtml += `
+      <div class="attempt-block" id="pld-block-${n}">
+        <div class="attempt-head">Pelancaran ${n}</div>
+        <div class="input-group">
+          <div class="input-wrap">
+            <label>Masa di udara (saat)</label>
+            <input type="text" inputmode="decimal"
+              class="num-input pld-time-input" data-pld-n="${n}"
+              value="${escapeHtml(String(a.time))}" placeholder="0.0"
+              style="font-size:20px;font-weight:700;">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
+          <div class="cond-grid">
+            <button class="cond-btn pld-cond-btn ${a.condition==='baik'?'active':''}"
+              data-pld-n="${n}" data-pld-field="condition" data-pld-val="baik">Baik</button>
+            <button class="cond-btn bad pld-cond-btn ${a.condition==='rosak'?'active':''}"
+              data-pld-n="${n}" data-pld-field="condition" data-pld-val="rosak">Rosak / Pecah</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Zon pendaratan</label>
+          <div class="zone-grid">
+            <button class="cond-btn pld-cond-btn ${a.zone==='in'?'active':''}"
+              data-pld-n="${n}" data-pld-field="zone" data-pld-val="in">Dalam Zon</button>
+            <button class="cond-btn bad pld-cond-btn ${a.zone==='out'?'active':''}"
+              data-pld-n="${n}" data-pld-field="zone" data-pld-val="out">Luar Zon</button>
+          </div>
+        </div>
+      </div>`;
+  }
 
   area.innerHTML = `
     <div class="section-title">${escapeHtml(team.name)} — Payung Terjun Berbeban</div>
+    ${pesertaHtml}
     <div class="card">
-      ${[1,2].map(n=>{
-        const a = entry['attempt'+n] || {time:'',condition:'baik',zone:'in'};
-        return `
-        <div class="attempt-block">
-          <div class="attempt-head">Pelancaran ${n}</div>
-          <div class="input-group">
-            <div class="input-wrap">
-              <label>Masa di udara (saat)</label>
-              <input type="number" inputmode="decimal" step="0.1" min="0" class="num-input" id="pl-time-${n}" value="${a.time}" placeholder="0.0">
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
-            <div class="cond-grid">
-              <button class="cond-btn ${a.condition==='baik'?'active':''}" data-attempt="${n}" data-field="condition" data-val="baik">Baik</button>
-              <button class="cond-btn bad ${a.condition==='rosak'?'active':''}" data-attempt="${n}" data-field="condition" data-val="rosak">Rosak / Pecah</button>
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">Zon pendaratan</label>
-            <div class="zone-grid">
-              <button class="cond-btn ${a.zone==='in'?'active':''}" data-attempt="${n}" data-field="zone" data-val="in">Dalam Zon</button>
-              <button class="cond-btn bad ${a.zone==='out'?'active':''}" data-attempt="${n}" data-field="zone" data-val="out">Luar Zon</button>
-            </div>
-          </div>
-        </div>`;
-      }).join('')}
-      <button class="save-btn" id="payload-save-entry">Simpan rekod</button>
-      <div class="save-confirm" id="payload-save-confirm"></div>
+      ${blocksHtml}
+      <button class="save-btn" id="pld-save-btn">Simpan rekod</button>
+      <div class="save-confirm" id="pld-save-confirm"></div>
     </div>
   `;
 
+  // Keep a mutable local copy of the entry
   let localEntry = JSON.parse(JSON.stringify(entry));
 
-  document.querySelectorAll('#payload-entry-area .cond-btn').forEach(btn=>{
+  // Condition/zone button handlers — scoped to area
+  area.querySelectorAll('.pld-cond-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const n = btn.dataset.attempt, field = btn.dataset.field, val = btn.dataset.val;
+      const n = btn.dataset.pldN;
+      const field = btn.dataset.pldField;
+      const val = btn.dataset.pldVal;
       localEntry['attempt'+n][field] = val;
-      document.querySelectorAll(`#payload-entry-area .cond-btn[data-attempt="${n}"][data-field="${field}"]`).forEach(b=>b.classList.remove('active'));
+      area.querySelectorAll(`.pld-cond-btn[data-pld-n="${n}"][data-pld-field="${field}"]`)
+        .forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
 
-  document.getElementById('payload-save-entry').addEventListener('click', async ()=>{
-    [1,2].forEach(n=>{
-      const timeVal = document.getElementById('pl-time-'+n).value;
-      localEntry['attempt'+n].time = timeVal;
+  // Save button handler
+  const saveBtn = area.querySelector('#pld-save-btn');
+  if(saveBtn){
+    saveBtn.addEventListener('click', async ()=>{
+      // Read time values from inputs
+      area.querySelectorAll('.pld-time-input').forEach(input=>{
+        const n = input.dataset.pldN;
+        localEntry['attempt'+n].time = input.value.trim();
+      });
+
+      // Validate at least one time is entered
+      const hasTime = [1,2].some(n=> localEntry['attempt'+n].time !== '');
+      if(!hasTime){
+        const c = area.querySelector('#pld-save-confirm');
+        if(c){ c.style.color='var(--red-text)'; c.textContent='Masukkan sekurang-kurangnya satu masa pelancaran.'; }
+        return;
+      }
+
+      state.payloadData[key] = localEntry;
+      await savePayloadEntry(key, localEntry);
+
+      const c = area.querySelector('#pld-save-confirm');
+      if(c){
+        c.style.color='var(--green-text)';
+        c.textContent='Disimpan ✓';
+        setTimeout(()=>{ if(c) c.textContent=''; }, 2000);
+      }
+      // Mark dropdown option
+      const opt = document.querySelector(`#payload-team-select option[value="${payloadSelectedTeamId}"]`);
+      if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
     });
-    state.payloadData[key] = localEntry;
-    await savePayloadEntry(key, localEntry);
-    document.getElementById('payload-save-confirm').textContent = 'Disimpan ✓';
-    setTimeout(()=>{ const c = document.getElementById('payload-save-confirm'); if(c) c.textContent=''; }, 1500);
-    const opt = document.querySelector(`#payload-team-select option[value="${payloadSelectedTeamId}"]`);
-    if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
-  });
+  }
 }
 
 function renderPayloadReadOnly(){
@@ -1589,3 +1638,4 @@ function handleAuthenticatedUser(user){
 </script>
 </body>
 </html>
+
