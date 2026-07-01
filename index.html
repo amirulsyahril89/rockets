@@ -1238,8 +1238,8 @@ function renderMainView(){
 
       <div class="seg-control" id="view-seg">
         <button class="seg-btn ${mainSubView==='overview'?'active':''}" data-view="overview">Ringkasan</button>
-        <button class="seg-btn ${mainSubView==='target'?'active':''}" data-view="target">Sasaran</button>
-        ${!isAdmin ? `<button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>` : `<button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>`}
+        <button class="seg-btn ${mainSubView==='target'?'active':''}" data-view="target">${isAdmin ? 'Sasaran' : 'Entry Sasaran'}</button>
+        <button class="seg-btn ${mainSubView==='payload'?'active':''}" data-view="payload">Payung Terjun</button>
         <button class="seg-btn ${mainSubView==='final'?'active':''}" data-view="final">Keputusan Akhir</button>
       </div>
 
@@ -1254,21 +1254,57 @@ function renderMainView(){
 
 let mainSubView = 'overview';
 let judgeSubView = 'target'; // 'target' | 'payload'
+let mainTargetDist = null; // which distance sub-tab Hakim Utama is entering (cfg.d1 or cfg.d2)
 
 function renderMainSubView(){
   if(mainSubView==='overview') return renderOverview();
-  if(mainSubView==='target') return renderTargetDetail();
+  if(mainSubView==='target') return state.role==='admin' ? renderTargetDetail() : renderMainTargetEntry();
   if(mainSubView==='payload') return state.role==='admin' ? renderPayloadReadOnly() : renderPayloadEntry();
   if(mainSubView==='final') return renderFinalStandings();
   return '';
 }
 
+function renderMainTargetEntry(){
+  const cfg = CATEGORY_LABELS[state.category];
+  // default to d1 if not set
+  if(!mainTargetDist) mainTargetDist = cfg.d1;
+  const dist = mainTargetDist;
+
+  const teamOptions = state.teams.map(t=>{
+    const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
+    const sel = selectedTeamId===t.id ? 'selected' : '';
+    return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
+  }).join('');
+
+  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan.</div>';
+
+  return '<div class="seg-control" id="main-dist-seg">'
+    + '<button class="seg-btn '+(dist===cfg.d1?'active':'')+'" data-mdist="'+cfg.d1+'">Jarak 1 ('+cfg.d1+'m)</button>'
+    + '<button class="seg-btn '+(dist===cfg.d2?'active':'')+'" data-mdist="'+cfg.d2+'">Jarak 2 ('+cfg.d2+'m)</button>'
+    + '</div>'
+    + '<div class="info-note">Merekod jarak <b>Jarak Sasaran ('+dist+' m)</b> bagi kategori <b>'+cfg.name+'</b>.</div>'
+    + '<div class="section-title">Pilih Sekolah</div>'
+    + (state.teams.length===0 ? noTeams
+        : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
+    + '<div id="entry-area"></div>'
+    + renderTargetRankTable(state.category, dist);
+}
+
 function bindMainView(){
   document.querySelectorAll('#cat-seg .seg-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ state.category = btn.dataset.cat; render(); });
+    btn.addEventListener('click', ()=>{
+      state.category = btn.dataset.cat;
+      mainTargetDist = null;
+      selectedTeamId = null;
+      render();
+    });
   });
   document.querySelectorAll('#view-seg .seg-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ mainSubView = btn.dataset.view; render(); });
+    btn.addEventListener('click', ()=>{
+      mainSubView = btn.dataset.view;
+      selectedTeamId = null;
+      render();
+    });
   });
   document.getElementById('refresh-now').addEventListener('click', ()=>{
     showToast('Data terkini (sync automatik aktif)');
@@ -1279,7 +1315,30 @@ function bindMainView(){
     adminDashboardMode = false;
     render();
   });
-  // Only Hakim Utama (not admin) can enter payload data
+
+  // Hakim Utama target entry bindings
+  if(mainSubView==='target' && state.role==='main'){
+    document.querySelectorAll('[data-mdist]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        mainTargetDist = parseFloat(btn.dataset.mdist);
+        selectedTeamId = null;
+        render();
+      });
+    });
+    const select = document.getElementById('team-select');
+    if(select){
+      select.addEventListener('change', ()=>{
+        selectedTeamId = select.value || null;
+        renderEntryArea(mainTargetDist, state.category);
+      });
+      if(selectedTeamId){
+        select.value = selectedTeamId;
+        renderEntryArea(mainTargetDist, state.category);
+      }
+    }
+  }
+
+  // Payload entry
   if(mainSubView==='payload' && state.role==='main') bindPayloadEntry();
 }
 
