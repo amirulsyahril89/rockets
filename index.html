@@ -1341,201 +1341,192 @@ function renderTargetDetail(){
   `;
 }
 
-function renderPayloadEntry(){
-  const cfg = CATEGORY_LABELS[state.category];
-  const rows = computePayloadRanking(state.category);
+/* ====================== PAYLOAD ENTRY (rewritten for reliability) ====================== */
 
-  return `
-    <div class="info-note">Rekod Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod terbaik (masa terpanjang) akan digunakan.</div>
+// Unified payload rendering — called by both Hakim Sasaran (via judgeSubView)
+// and Hakim Utama (via mainSubView). Uses locked category for judges.
+function getPayloadCategory(){
+  const judgeInfo = parseJudgeRole(state.role);
+  return judgeInfo ? judgeInfo.category : state.category;
+}
 
-    <div class="section-title">Pilih Sekolah</div>
-    ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi admin untuk daftar sekolah dahulu.</div>' : `
-    <select class="team-select" id="payload-team-select">
-      <option value="">— Pilih sekolah —</option>
-      ${state.teams.map(t=>{
-        const hasData = !!state.payloadData[payloadKey(state.category, t.id)];
-        return `<option value="${t.id}" ${payloadSelectedTeamId===t.id?'selected':''}>${escapeHtml(t.name)}${hasData?' ✓':''}</option>`;
-      }).join('')}
-    </select>`}
+function renderPayloadUI(){
+  const cat = getPayloadCategory();
+  const rows = computePayloadRanking(cat);
 
-    <div id="payload-entry-area"></div>
+  const teamOptions = state.teams.map(t=>{
+    const hasData = !!state.payloadData[payloadKey(cat, t.id)];
+    const sel = payloadSelectedTeamId===t.id ? 'selected' : '';
+    return '<option value="' + t.id + '" ' + sel + '>' + escapeHtml(t.name) + (hasData?' ✓':'') + '</option>';
+  }).join('');
 
-    ${rows.length>0 ? `
-    <div class="section-title">Kedudukan kategori payung terjun berbeban</div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Kedudukan</th><th>Pasukan</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
-        <tbody>
-          ${rows.map(r=>`
-            <tr>
-              <td class="rank-cell ${r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':''}">${r.rank}</td>
-              <td>${escapeHtml(r.teamName)}</td>
-              <td>${r.data.time}</td>
-              <td>${r.timeMark}</td>
-              <td>${r.condMark}</td>
-              <td>${r.zoneMark}</td>
-              <td class="mark-cell">${r.total}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>` : ''}
-  `;
+  const rankRows = rows.map(r =>
+    '<tr>' +
+    '<td class="rank-cell ' + (r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':'') + '">' + r.rank + '</td>' +
+    '<td>' + escapeHtml(r.teamName) + '</td>' +
+    '<td>' + r.data.time + '</td>' +
+    '<td>' + r.timeMark + '</td>' +
+    '<td>' + r.condMark + '</td>' +
+    '<td>' + r.zoneMark + '</td>' +
+    '<td class="mark-cell">' + r.total + '</td>' +
+    '</tr>'
+  ).join('');
+
+  const rankTable = rows.length===0 ? '' :
+    '<div class="section-title">Kedudukan Payung Terjun Berbeban</div>' +
+    '<div class="table-wrap"><table>' +
+    '<thead><tr><th>Kedudukan</th><th>Sekolah</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>' +
+    '<tbody>' + rankRows + '</tbody></table></div>';
+
+  return '<div class="info-note">Rekod Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod masa terpanjang akan digunakan.</div>' +
+    '<div class="section-title">Pilih Sekolah</div>' +
+    (state.teams.length===0
+      ? '<div class="empty-state">Belum ada sekolah didaftarkan.</div>'
+      : '<select class="team-select" id="payload-team-select"><option value="">— Pilih sekolah —</option>' + teamOptions + '</select>') +
+    '<div id="payload-entry-area"></div>' +
+    rankTable;
+}
+
+// Alias used by renderMainSubView and renderJudgeView
+function renderPayloadEntry(){ return renderPayloadUI(); }
+
+// Read-only version for admin
+function renderPayloadReadOnly(){
+  const cat = getPayloadCategory();
+  const rows = computePayloadRanking(cat);
+  const rankRows = rows.map(r =>
+    '<tr>' +
+    '<td class="rank-cell ' + (r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':'') + '">' + r.rank + '</td>' +
+    '<td>' + escapeHtml(r.teamName) + '</td>' +
+    '<td>' + r.data.time + '</td>' +
+    '<td>' + r.timeMark + '</td>' +
+    '<td>' + r.condMark + '</td>' +
+    '<td>' + r.zoneMark + '</td>' +
+    '<td class="mark-cell">' + r.total + '</td>' +
+    '</tr>'
+  ).join('');
+  return '<div class="info-note">Paparan baca sahaja. Hanya Hakim boleh merekod data Payung Terjun Berbeban.</div>' +
+    (rows.length===0
+      ? '<div class="empty-state">Belum ada rekod payung terjun dimasukkan.</div>'
+      : '<div class="table-wrap"><table><thead><tr><th>Kedudukan</th><th>Sekolah</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead><tbody>' + rankRows + '</tbody></table></div>');
 }
 
 function renderPayloadEntryArea(){
   const area = document.getElementById('payload-entry-area');
   if(!area) return;
   if(!payloadSelectedTeamId){ area.innerHTML=''; return; }
+  const cat = getPayloadCategory();
   const team = state.teams.find(t=>t.id===payloadSelectedTeamId);
   if(!team){ area.innerHTML=''; return; }
-
-  // Use locked category for judges, state.category for main/admin
-  const judgeInfo = parseJudgeRole(state.role);
-  const cat = judgeInfo ? judgeInfo.category : state.category;
   const key = payloadKey(cat, payloadSelectedTeamId);
-  const entry = state.payloadData[key] || {
-    attempt1:{time:'',condition:'baik',zone:'in'},
-    attempt2:{time:'',condition:'baik',zone:'in'}
-  };
+  const saved = state.payloadData[key] || {};
+  const a1 = saved.attempt1 || {time:'',condition:'baik',zone:'in'};
+  const a2 = saved.attempt2 || {time:'',condition:'baik',zone:'in'};
 
-  const pesertaHtml = (team.peserta1||team.peserta2) ? `
-    <div class="info-note" style="margin-bottom:12px;">
-      👤 ${escapeHtml(team.peserta1||'—')} &nbsp;|&nbsp; 👤 ${escapeHtml(team.peserta2||'—')}
-    </div>` : '';
+  const peserta = (team.peserta1||team.peserta2)
+    ? '<div class="info-note" style="margin-bottom:10px;">👤 ' + escapeHtml(team.peserta1||'—') + ' &nbsp;|&nbsp; 👤 ' + escapeHtml(team.peserta2||'—') + '</div>'
+    : '';
 
-  // Render 2 attempt blocks
-  let blocksHtml = '';
-  for(let n=1; n<=2; n++){
-    const a = entry['attempt'+n] || {time:'',condition:'baik',zone:'in'};
-    blocksHtml += `
-      <div class="attempt-block" id="pld-block-${n}">
-        <div class="attempt-head">Pelancaran ${n}</div>
-        <div class="input-group">
-          <div class="input-wrap">
-            <label>Masa di udara (saat)</label>
-            <input type="text" inputmode="decimal"
-              class="num-input pld-time-input" data-pld-n="${n}"
-              value="${escapeHtml(String(a.time))}" placeholder="0.0"
-              style="font-size:20px;font-weight:700;">
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Keadaan fizikal beban selepas mendarat</label>
-          <div class="cond-grid">
-            <button class="cond-btn pld-cond-btn ${a.condition==='baik'?'active':''}"
-              data-pld-n="${n}" data-pld-field="condition" data-pld-val="baik">Baik</button>
-            <button class="cond-btn bad pld-cond-btn ${a.condition==='rosak'?'active':''}"
-              data-pld-n="${n}" data-pld-field="condition" data-pld-val="rosak">Rosak / Pecah</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Zon pendaratan</label>
-          <div class="zone-grid">
-            <button class="cond-btn pld-cond-btn ${a.zone==='in'?'active':''}"
-              data-pld-n="${n}" data-pld-field="zone" data-pld-val="in">Dalam Zon</button>
-            <button class="cond-btn bad pld-cond-btn ${a.zone==='out'?'active':''}"
-              data-pld-n="${n}" data-pld-field="zone" data-pld-val="out">Luar Zon</button>
-          </div>
-        </div>
-      </div>`;
+  function attemptBlock(n, a){
+    return '<div class="attempt-block">' +
+      '<div class="attempt-head">Pelancaran ' + n + '</div>' +
+      '<div class="input-group"><div class="input-wrap">' +
+      '<label>Masa di udara (saat)</label>' +
+      '<input type="text" inputmode="decimal" class="num-input" id="pld-t' + n + '" value="' + escapeHtml(String(a.time)) + '" placeholder="0.0">' +
+      '</div></div>' +
+      '<div class="form-row"><label class="form-label">Keadaan fizikal beban</label>' +
+      '<div class="cond-grid">' +
+      '<button class="cond-btn ' + (a.condition==='baik'?'active':'') + '" id="pld-cond-' + n + '-baik">Baik</button>' +
+      '<button class="cond-btn bad ' + (a.condition==='rosak'?'active':'') + '" id="pld-cond-' + n + '-rosak">Rosak / Pecah</button>' +
+      '</div></div>' +
+      '<div class="form-row"><label class="form-label">Zon pendaratan</label>' +
+      '<div class="zone-grid">' +
+      '<button class="cond-btn ' + (a.zone==='in'?'active':'') + '" id="pld-zone-' + n + '-in">Dalam Zon</button>' +
+      '<button class="cond-btn bad ' + (a.zone==='out'?'active':'') + '" id="pld-zone-' + n + '-out">Luar Zon</button>' +
+      '</div></div>' +
+      '</div>';
   }
 
-  area.innerHTML = `
-    <div class="section-title">${escapeHtml(team.name)} — Payung Terjun Berbeban</div>
-    ${pesertaHtml}
-    <div class="card">
-      ${blocksHtml}
-      <button class="save-btn" id="pld-save-btn">Simpan rekod</button>
-      <div class="save-confirm" id="pld-save-confirm"></div>
-    </div>
-  `;
+  area.innerHTML =
+    '<div class="section-title">' + escapeHtml(team.name) + ' — Payung Terjun Berbeban</div>' +
+    peserta +
+    '<div class="card">' +
+    attemptBlock(1, a1) +
+    attemptBlock(2, a2) +
+    '<button class="save-btn" id="pld-save">Simpan rekod</button>' +
+    '<div class="save-confirm" id="pld-confirm"></div>' +
+    '</div>';
 
-  // Keep a mutable local copy of the entry
-  let localEntry = JSON.parse(JSON.stringify(entry));
+  // Mutable local state for this entry
+  const local = {
+    attempt1: {time: a1.time, condition: a1.condition, zone: a1.zone},
+    attempt2: {time: a2.time, condition: a2.condition, zone: a2.zone}
+  };
 
-  // Condition/zone button handlers — scoped to area
-  area.querySelectorAll('.pld-cond-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const n = btn.dataset.pldN;
-      const field = btn.dataset.pldField;
-      const val = btn.dataset.pldVal;
-      localEntry['attempt'+n][field] = val;
-      area.querySelectorAll(`.pld-cond-btn[data-pld-n="${n}"][data-pld-field="${field}"]`)
-        .forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
+  // Wire condition buttons
+  [1,2].forEach(n => {
+    ['baik','rosak'].forEach(val => {
+      const btn = document.getElementById('pld-cond-' + n + '-' + val);
+      if(btn) btn.addEventListener('click', () => {
+        local['attempt'+n].condition = val;
+        ['baik','rosak'].forEach(v => {
+          const b = document.getElementById('pld-cond-' + n + '-' + v);
+          if(b) b.classList.toggle('active', v===val);
+        });
+      });
+    });
+    ['in','out'].forEach(val => {
+      const btn = document.getElementById('pld-zone-' + n + '-' + val);
+      if(btn) btn.addEventListener('click', () => {
+        local['attempt'+n].zone = val;
+        ['in','out'].forEach(v => {
+          const b = document.getElementById('pld-zone-' + n + '-' + v);
+          if(b) b.classList.toggle('active', v===val);
+        });
+      });
     });
   });
 
-  // Save button handler
-  const saveBtn = area.querySelector('#pld-save-btn');
-  if(saveBtn){
-    saveBtn.addEventListener('click', async ()=>{
-      // Read time values from inputs
-      area.querySelectorAll('.pld-time-input').forEach(input=>{
-        const n = input.dataset.pldN;
-        localEntry['attempt'+n].time = input.value.trim();
-      });
-
-      // Validate at least one time is entered
-      const hasTime = [1,2].some(n=> localEntry['attempt'+n].time !== '');
-      if(!hasTime){
-        const c = area.querySelector('#pld-save-confirm');
-        if(c){ c.style.color='var(--red-text)'; c.textContent='Masukkan sekurang-kurangnya satu masa pelancaran.'; }
-        return;
-      }
-
-      state.payloadData[key] = localEntry;
-      await savePayloadEntry(key, localEntry);
-
-      const c = area.querySelector('#pld-save-confirm');
-      if(c){
-        c.style.color='var(--green-text)';
-        c.textContent='Disimpan ✓';
-        setTimeout(()=>{ if(c) c.textContent=''; }, 2000);
-      }
-      // Mark dropdown option
-      const opt = document.querySelector(`#payload-team-select option[value="${payloadSelectedTeamId}"]`);
-      if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
+  // Wire save button
+  const saveBtn = document.getElementById('pld-save');
+  const confirm = document.getElementById('pld-confirm');
+  if(saveBtn) saveBtn.addEventListener('click', async () => {
+    [1,2].forEach(n => {
+      const inp = document.getElementById('pld-t' + n);
+      if(inp) local['attempt'+n].time = inp.value.trim();
     });
-  }
-}
-
-function renderPayloadReadOnly(){
-  const rows = computePayloadRanking(state.category);
-  return `
-    <div class="info-note">Paparan baca sahaja. Hanya Hakim Utama yang boleh merekod data Payung Terjun Berbeban.</div>
-    ${rows.length===0
-      ? '<div class="empty-state">Belum ada rekod payung terjun dimasukkan.</div>'
-      : `<div class="table-wrap">
-          <table>
-            <thead><tr><th>Kedudukan</th><th>Sekolah</th><th>Masa terbaik (s)</th><th>Markah masa</th><th>Beban</th><th>Zon</th><th>Jumlah (40%)</th></tr></thead>
-            <tbody>
-              ${rows.map(r=>`
-                <tr>
-                  <td class="rank-cell ${r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':''}">${r.rank}</td>
-                  <td>${escapeHtml(r.teamName)}</td>
-                  <td>${r.data.time}</td>
-                  <td>${r.timeMark}</td>
-                  <td>${r.condMark}</td>
-                  <td>${r.zoneMark}</td>
-                  <td class="mark-cell">${r.total}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>`}
-  `;
+    const hasTime = local.attempt1.time || local.attempt2.time;
+    if(!hasTime){
+      if(confirm){ confirm.style.color='var(--red-text)'; confirm.textContent='Masukkan sekurang-kurangnya satu masa.'; }
+      return;
+    }
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Menyimpan...';
+    try{
+      state.payloadData[key] = local;
+      await savePayloadEntry(key, local);
+      if(confirm){ confirm.style.color='var(--green-text)'; confirm.textContent='Disimpan ✓'; }
+      const opt = document.querySelector('#payload-team-select option[value="' + payloadSelectedTeamId + '"]');
+      if(opt && !opt.textContent.includes('✓')) opt.textContent += ' ✓';
+    }catch(e){
+      if(confirm){ confirm.style.color='var(--red-text)'; confirm.textContent='Ralat! Cuba lagi.'; }
+    }finally{
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan rekod';
+      setTimeout(()=>{ if(confirm) confirm.textContent=''; }, 2500);
+    }
+  });
 }
 
 function bindPayloadEntry(){
   const select = document.getElementById('payload-team-select');
-  if(select){
-    select.addEventListener('change', ()=>{
-      payloadSelectedTeamId = select.value || null;
-      renderPayloadEntryArea();
-    });
-  }
-  if(payloadSelectedTeamId && state.teams.find(t=>t.id===payloadSelectedTeamId)){
+  if(!select) return;
+  select.addEventListener('change', () => {
+    payloadSelectedTeamId = select.value || null;
+    renderPayloadEntryArea();
+  });
+  if(payloadSelectedTeamId){
+    select.value = payloadSelectedTeamId;
     renderPayloadEntryArea();
   }
 }
