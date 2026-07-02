@@ -442,7 +442,14 @@ function getBestAttempt(entry){
 
 function getTeamsByCategory(cat){
   // Teams registered before category field existed default to SR
-  return state.teams.filter(t => (t.category || 'SR') === cat);
+  // Sort by giliran (ascending), teams without giliran go to end
+  return state.teams
+    .filter(t => (t.category || 'SR') === cat)
+    .sort((a,b) => {
+      const ga = a.giliran || 9999;
+      const gb = b.giliran || 9999;
+      return ga - gb;
+    });
 }
 
 function teamKey(cat, teamId, dist){ return `${cat}_${teamId}_${dist}`; }
@@ -913,6 +920,10 @@ function renderAdminView(){
           <input type="text" class="add-team-input" id="adm-school-name" placeholder="Contoh: SK Bohor Baharu">
         </div>
         <div class="input-group">
+          <div class="input-wrap" style="flex:0 0 110px;">
+            <label class="form-label" style="margin-bottom:6px;">No. Giliran</label>
+            <input type="number" inputmode="numeric" min="1" class="add-team-input" id="adm-giliran" placeholder="1">
+          </div>
           <div class="input-wrap">
             <label class="form-label" style="margin-bottom:6px;">Peserta 1</label>
             <input type="text" class="add-team-input" id="adm-participant1" placeholder="Nama peserta 1">
@@ -927,16 +938,21 @@ function renderAdminView(){
       </div>
 
       ${['SR','SM'].map(cat=>{
-        const catTeams = state.teams.filter(t=>(t.category||'SR')===cat);
+        const catTeams = state.teams
+          .filter(t=>(t.category||'SR')===cat)
+          .sort((a,b)=> (a.giliran||999) - (b.giliran||999));
         const catLabel = cat==='SR' ? 'Sekolah Rendah' : 'Sekolah Menengah';
         return `
           <div class="section-title">${catLabel} (${catTeams.length} pasukan)</div>
           ${catTeams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini.</div>' :
             catTeams.map(t=>`
               <div class="pending-card" data-team-row="${t.id}">
-                <div>
-                  <div class="pending-name">${escapeHtml(t.name)}</div>
-                  <div class="pending-email">${t.peserta1 ? escapeHtml(t.peserta1) : '<span class="muted">Peserta 1 belum diisi</span>'} &nbsp;•&nbsp; ${t.peserta2 ? escapeHtml(t.peserta2) : '<span class="muted">Peserta 2 belum diisi</span>'}</div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="min-width:36px;height:36px;background:var(--blue-dim);color:var(--blue-text);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${t.giliran||'—'}</div>
+                  <div>
+                    <div class="pending-name">${escapeHtml(t.name)}</div>
+                    <div class="pending-email">${t.peserta1 ? escapeHtml(t.peserta1) : '<span class="muted">Peserta 1 belum diisi</span>'} &nbsp;•&nbsp; ${t.peserta2 ? escapeHtml(t.peserta2) : '<span class="muted">Peserta 2 belum diisi</span>'}</div>
+                  </div>
                 </div>
                 <div class="role-assign-row">
                   <button class="assign-btn" data-edit-team="${t.id}">Edit</button>
@@ -997,21 +1013,20 @@ function bindAdminView(){
     const p1Input = document.getElementById('adm-participant1');
     const p2Input = document.getElementById('adm-participant2');
     const catInput = document.getElementById('adm-category');
+    const giliranInput = document.getElementById('adm-giliran');
     const name = nameInput.value.trim();
     const peserta1 = p1Input.value.trim();
     const peserta2 = p2Input.value.trim();
     const category = catInput ? catInput.value : 'SR';
-    if(!name){
-      nameInput.focus();
-      return;
-    }
+    const giliran = giliranInput ? parseInt(giliranInput.value)||0 : 0;
+    if(!name){ nameInput.focus(); return; }
     const id = 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-    state.teams.push({id, name, peserta1, peserta2, category});
+    state.teams.push({id, name, peserta1, peserta2, category, giliran});
     await saveTeams();
-    nameInput.value=''; p1Input.value=''; p2Input.value='';
+    nameInput.value=''; p1Input.value=''; p2Input.value=''; if(giliranInput) giliranInput.value='';
     const confirmEl = document.getElementById('adm-add-team-confirm');
     if(confirmEl){
-      confirmEl.textContent = 'Pasukan "'+name+'" ('+( category==='SR'?'Sekolah Rendah':'Sekolah Menengah')+') didaftarkan ✓';
+      confirmEl.textContent = '[Giliran '+giliran+'] "'+name+'" ('+( category==='SR'?'Sekolah Rendah':'Sekolah Menengah')+') didaftarkan ✓';
       confirmEl.style.color = 'var(--green-text)';
     }
     showToast('Pasukan "'+name+'" didaftarkan');
@@ -1023,12 +1038,15 @@ function bindAdminView(){
       const teamId = btn.dataset.editTeam;
       const team = state.teams.find(t=>t.id===teamId);
       if(!team) return;
+      const newGiliran = prompt('No. Giliran:', team.giliran||'');
+      if(newGiliran===null) return;
       const newName = prompt('Nama sekolah:', team.name);
       if(newName===null) return;
       const newP1 = prompt('Peserta 1:', team.peserta1||'');
       if(newP1===null) return;
       const newP2 = prompt('Peserta 2:', team.peserta2||'');
       if(newP2===null) return;
+      team.giliran = parseInt(newGiliran)||0;
       team.name = newName.trim() || team.name;
       team.peserta1 = newP1.trim();
       team.peserta2 = newP2.trim();
@@ -1086,7 +1104,8 @@ function renderJudgeView(judgeNum, lockedCategory){
   const teamOptions = catTeams.map(t=>{
     const hasData = !!state.targetData[teamKey(lockedCategory, t.id, dist)];
     const sel = selectedTeamId===t.id ? 'selected' : '';
-    return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
+    const gLabel = t.giliran ? '['+t.giliran+'] ' : '';
+    return '<option value="'+t.id+'" '+sel+'>'+gLabel+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
   }).join('');
 
   const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini. Hubungi Admin.</div>';
@@ -1160,10 +1179,12 @@ function renderEntryArea(dist, lockedCategory){
   const key = teamKey(lockedCategory, selectedTeamId, dist);
   const entry = state.targetData[key] || { attempt1:{distance:'',zone:'in'}, attempt2:{distance:'',zone:'in'} };
 
-  const pesertaHtml = (team.peserta1||team.peserta2) ? `
+  const giliranBadge = team.giliran ? `<span style="background:var(--blue-dim);color:var(--blue-text);font-weight:700;padding:3px 10px;border-radius:20px;font-size:13px;margin-right:8px;">Giliran ${team.giliran}</span>` : '';
+
+  const pesertaHtml = `
     <div class="info-note" style="margin-bottom:12px;">
-      👤 ${escapeHtml(team.peserta1||'—')} &nbsp;|&nbsp; 👤 ${escapeHtml(team.peserta2||'—')}
-    </div>` : '';
+      ${giliranBadge}👤 ${escapeHtml(team.peserta1||'—')} &nbsp;|&nbsp; 👤 ${escapeHtml(team.peserta2||'—')}
+    </div>`;
 
   area.innerHTML = `
     <div class="section-title">${escapeHtml(team.name)} — Jarak ${dist} m</div>
@@ -1306,7 +1327,8 @@ function renderMainTargetEntry(){
   const teamOptions = catTeams.map(t=>{
     const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
     const sel = selectedTeamId===t.id ? 'selected' : '';
-    return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
+    const gLabel = t.giliran ? '['+t.giliran+'] ' : '';
+    return '<option value="'+t.id+'" '+sel+'>'+gLabel+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
   }).join('');
 
   const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini.</div>';
@@ -1472,7 +1494,8 @@ function renderPayloadUI(){
   const teamOptions = catTeams.map(t=>{
     const hasData = !!state.payloadData[payloadKey(cat, t.id)];
     const sel = payloadSelectedTeamId===t.id ? 'selected' : '';
-    return '<option value="' + t.id + '" ' + sel + '>' + escapeHtml(t.name) + (hasData?' ✓':'') + '</option>';
+    const gLabel = t.giliran ? '['+t.giliran+'] ' : '';
+    return '<option value="' + t.id + '" ' + sel + '>' + gLabel + escapeHtml(t.name) + (hasData?' ✓':'') + '</option>';
   }).join('');
 
   const rankRows = rows.map(r =>
@@ -1538,8 +1561,10 @@ function renderPayloadEntryArea(){
   const a1 = saved.attempt1 || {time:'',condition:'baik',zone:'in'};
   const a2 = saved.attempt2 || {time:'',condition:'baik',zone:'in'};
 
-  const peserta = (team.peserta1||team.peserta2)
-    ? '<div class="info-note" style="margin-bottom:10px;">👤 ' + escapeHtml(team.peserta1||'—') + ' &nbsp;|&nbsp; 👤 ' + escapeHtml(team.peserta2||'—') + '</div>'
+  const peserta = (team.peserta1||team.peserta2||team.giliran)
+    ? '<div class="info-note" style="margin-bottom:10px;">' +
+      (team.giliran ? '<span style="background:var(--blue-dim);color:var(--blue-text);font-weight:700;padding:3px 10px;border-radius:20px;font-size:13px;margin-right:8px;">Giliran '+team.giliran+'</span>' : '') +
+      '👤 ' + escapeHtml(team.peserta1||'—') + ' &nbsp;|&nbsp; 👤 ' + escapeHtml(team.peserta2||'—') + '</div>'
     : '';
 
   function attemptBlock(n, a){
