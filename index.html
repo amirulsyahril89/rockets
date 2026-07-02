@@ -440,11 +440,16 @@ function getBestAttempt(entry){
   return valid[0];
 }
 
+function getTeamsByCategory(cat){
+  // Teams registered before category field existed default to SR
+  return state.teams.filter(t => (t.category || 'SR') === cat);
+}
+
 function teamKey(cat, teamId, dist){ return `${cat}_${teamId}_${dist}`; }
 function payloadKey(cat, teamId){ return `${cat}_${teamId}`; }
 
 function computeTargetRanking(category, dist){
-  const rows = state.teams.map(t=>{
+  const rows = getTeamsByCategory(category).map(t=>{
     const entry = state.targetData[teamKey(category, t.id, dist)];
     const best = getBestAttempt(entry);
     return { teamId: t.id, teamName: t.name, best };
@@ -469,7 +474,8 @@ function computeOverallTargetScore(category){
   const m1 = {}; r1.forEach(r=>m1[r.teamId]=r);
   const m2 = {}; r2.forEach(r=>m2[r.teamId]=r);
 
-  const rows = state.teams.map(t=>{
+  const catTeams = getTeamsByCategory(category);
+  const rows = catTeams.map(t=>{
     const e1 = m1[t.id], e2 = m2[t.id];
     const mark1 = e1 ? e1.mark : 0;
     const mark2 = e2 ? e2.mark : 0;
@@ -492,13 +498,12 @@ function getBestPayloadAttempt(entry){
   const a1 = entry.attempt1, a2 = entry.attempt2;
   const valid = [a1,a2].filter(a => a && a.time !== '' && a.time !== null && a.time !== undefined);
   if(valid.length===0) return null;
-  // Longest airtime wins (best record), matching the target rocket "best of 2" rule
   valid.sort((x,y)=> parseFloat(y.time) - parseFloat(x.time));
   return valid[0];
 }
 
 function computePayloadRanking(category){
-  const rows = state.teams.map(t=>{
+  const rows = getTeamsByCategory(category).map(t=>{
     const entry = state.payloadData[payloadKey(category, t.id)];
     const best = getBestPayloadAttempt(entry);
     return { teamId:t.id, teamName:t.name, data:best };
@@ -524,16 +529,15 @@ function computeFinalStandings(category){
   const payloadRows = computePayloadRanking(category);
   const payloadMap = {}; payloadRows.forEach(r=> payloadMap[r.teamId]=r);
 
-  const allTeamIds = state.teams.map(t=>t.id);
-  const rows = allTeamIds.map(id=>{
-    const t = state.teams.find(x=>x.id===id);
-    const tgt = targetRes.ranked.find(r=>r.teamId===id);
-    const pay = payloadMap[id];
+  const catTeams = getTeamsByCategory(category);
+  const rows = catTeams.map(t=>{
+    const tgt = targetRes.ranked.find(r=>r.teamId===t.id);
+    const pay = payloadMap[t.id];
     const markA = tgt ? tgt.avgMark : 0;
     const markB = pay ? pay.total : 0;
     const total = markA + markB;
     return {
-      teamId:id, teamName:t.name,
+      teamId:t.id, teamName:t.name,
       targetRank: tgt ? tgt.overallRank : null,
       markA: markA,
       payloadRank: pay ? pay.rank : null,
@@ -897,7 +901,15 @@ function renderAdminView(){
       <div class="info-note">Daftar sekolah dan nama 2 peserta setiap pasukan di sini. Senarai ini dikongsi dengan semua hakim secara automatik.</div>
       <div class="card">
         <div class="form-row">
-          <label class="form-label">Nama Sekolah / Negeri</label>
+          <label class="form-label">Kategori</label>
+          <div class="seg-control" id="adm-cat-seg" style="margin-bottom:0;">
+            <button class="seg-btn active" data-adm-cat="SR">Sekolah Rendah</button>
+            <button class="seg-btn" data-adm-cat="SM">Sekolah Menengah</button>
+          </div>
+          <input type="hidden" id="adm-category" value="SR">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Nama Sekolah</label>
           <input type="text" class="add-team-input" id="adm-school-name" placeholder="Contoh: SK Bohor Baharu">
         </div>
         <div class="input-group">
@@ -914,19 +926,26 @@ function renderAdminView(){
         <div class="save-confirm" id="adm-add-team-confirm"></div>
       </div>
 
-      ${state.teams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan.</div>' :
-        state.teams.map(t=>`
-          <div class="pending-card" data-team-row="${t.id}">
-            <div>
-              <div class="pending-name">${escapeHtml(t.name)}</div>
-              <div class="pending-email">${t.peserta1 ? escapeHtml(t.peserta1) : '<span class="muted">Peserta 1 belum diisi</span>'} &nbsp;•&nbsp; ${t.peserta2 ? escapeHtml(t.peserta2) : '<span class="muted">Peserta 2 belum diisi</span>'}</div>
-            </div>
-            <div class="role-assign-row">
-              <button class="assign-btn" data-edit-team="${t.id}">Edit</button>
-              <button class="assign-btn assign-deny" data-delete-team="${t.id}">Buang</button>
-            </div>
-          </div>
-        `).join('')}
+      ${['SR','SM'].map(cat=>{
+        const catTeams = state.teams.filter(t=>(t.category||'SR')===cat);
+        const catLabel = cat==='SR' ? 'Sekolah Rendah' : 'Sekolah Menengah';
+        return `
+          <div class="section-title">${catLabel} (${catTeams.length} pasukan)</div>
+          ${catTeams.length===0 ? '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini.</div>' :
+            catTeams.map(t=>`
+              <div class="pending-card" data-team-row="${t.id}">
+                <div>
+                  <div class="pending-name">${escapeHtml(t.name)}</div>
+                  <div class="pending-email">${t.peserta1 ? escapeHtml(t.peserta1) : '<span class="muted">Peserta 1 belum diisi</span>'} &nbsp;•&nbsp; ${t.peserta2 ? escapeHtml(t.peserta2) : '<span class="muted">Peserta 2 belum diisi</span>'}</div>
+                </div>
+                <div class="role-assign-row">
+                  <button class="assign-btn" data-edit-team="${t.id}">Edit</button>
+                  <button class="assign-btn assign-deny" data-delete-team="${t.id}">Buang</button>
+                </div>
+              </div>
+            `).join('')}
+        `;
+      }).join('')}
 
       <div class="section-title">Pengurusan papan markah</div>
       <div class="info-note">Sebagai admin, anda juga boleh lihat papan markah penuh seperti Hakim Utama.</div>
@@ -962,25 +981,37 @@ function bindAdminView(){
     render();
   });
 
+  // Category selector in registration form
+  document.querySelectorAll('[data-adm-cat]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const catInput = document.getElementById('adm-category');
+      if(catInput) catInput.value = btn.dataset.admCat;
+      document.querySelectorAll('[data-adm-cat]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
   const addTeamBtn = document.getElementById('adm-add-team-btn');
   if(addTeamBtn) addTeamBtn.addEventListener('click', async ()=>{
     const nameInput = document.getElementById('adm-school-name');
     const p1Input = document.getElementById('adm-participant1');
     const p2Input = document.getElementById('adm-participant2');
+    const catInput = document.getElementById('adm-category');
     const name = nameInput.value.trim();
     const peserta1 = p1Input.value.trim();
     const peserta2 = p2Input.value.trim();
+    const category = catInput ? catInput.value : 'SR';
     if(!name){
       nameInput.focus();
       return;
     }
     const id = 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-    state.teams.push({id, name, peserta1, peserta2});
+    state.teams.push({id, name, peserta1, peserta2, category});
     await saveTeams();
     nameInput.value=''; p1Input.value=''; p2Input.value='';
     const confirmEl = document.getElementById('adm-add-team-confirm');
     if(confirmEl){
-      confirmEl.textContent = 'Pasukan "'+name+'" didaftarkan ✓';
+      confirmEl.textContent = 'Pasukan "'+name+'" ('+( category==='SR'?'Sekolah Rendah':'Sekolah Menengah')+') didaftarkan ✓';
       confirmEl.style.color = 'var(--green-text)';
     }
     showToast('Pasukan "'+name+'" didaftarkan');
@@ -1050,14 +1081,15 @@ function renderTargetRankTable(lockedCategory, dist){
 function renderJudgeView(judgeNum, lockedCategory){
   const cfg = CATEGORY_LABELS[lockedCategory];
   const dist = judgeNum===1 ? cfg.d1 : cfg.d2;
+  const catTeams = getTeamsByCategory(lockedCategory);
 
-  const teamOptions = state.teams.map(t=>{
+  const teamOptions = catTeams.map(t=>{
     const hasData = !!state.targetData[teamKey(lockedCategory, t.id, dist)];
     const sel = selectedTeamId===t.id ? 'selected' : '';
     return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
   }).join('');
 
-  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan. Hubungi Admin untuk daftar sekolah dahulu.</div>';
+  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini. Hubungi Admin.</div>';
 
   if(judgeSubView==='payload'){
     return '<div class="section">'
@@ -1077,7 +1109,7 @@ function renderJudgeView(judgeNum, lockedCategory){
     + '<div class="info-note">Merekod jarak <b>Jarak Sasaran '+judgeNum+' ('+dist+' m)</b> bagi kategori <b>'+cfg.name+'</b>. '
     + 'Tanda <b>Dalam Zon</b> jika roket jatuh dalam bulatan sasaran, atau <b>Luar Zon</b> jika jatuh di luar.</div>'
     + '<div class="section-title">Pilih Sekolah</div>'
-    + (state.teams.length===0 ? noTeams
+    + (catTeams.length===0 ? noTeams
         : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
     + '<div id="entry-area"></div>'
     + renderTargetRankTable(lockedCategory, dist)
@@ -1269,14 +1301,15 @@ function renderMainTargetEntry(){
   // default to d1 if not set
   if(!mainTargetDist) mainTargetDist = cfg.d1;
   const dist = mainTargetDist;
+  const catTeams = getTeamsByCategory(state.category);
 
-  const teamOptions = state.teams.map(t=>{
+  const teamOptions = catTeams.map(t=>{
     const hasData = !!state.targetData[teamKey(state.category, t.id, dist)];
     const sel = selectedTeamId===t.id ? 'selected' : '';
     return '<option value="'+t.id+'" '+sel+'>'+escapeHtml(t.name)+(hasData?' ✓':'')+'</option>';
   }).join('');
 
-  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan.</div>';
+  const noTeams = '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini.</div>';
 
   return '<div class="seg-control" id="main-dist-seg">'
     + '<button class="seg-btn '+(dist===cfg.d1?'active':'')+'" data-mdist="'+cfg.d1+'">Jarak 1 ('+cfg.d1+'m)</button>'
@@ -1284,7 +1317,7 @@ function renderMainTargetEntry(){
     + '</div>'
     + '<div class="info-note">Merekod jarak <b>Jarak Sasaran ('+dist+' m)</b> bagi kategori <b>'+cfg.name+'</b>.</div>'
     + '<div class="section-title">Pilih Sekolah</div>'
-    + (state.teams.length===0 ? noTeams
+    + (catTeams.length===0 ? noTeams
         : '<select class="team-select" id="team-select"><option value="">— Pilih sekolah —</option>'+teamOptions+'</select>')
     + '<div id="entry-area"></div>'
     + renderTargetRankTable(state.category, dist);
@@ -1434,8 +1467,9 @@ function getPayloadCategory(){
 function renderPayloadUI(){
   const cat = getPayloadCategory();
   const rows = computePayloadRanking(cat);
+  const catTeams = getTeamsByCategory(cat);
 
-  const teamOptions = state.teams.map(t=>{
+  const teamOptions = catTeams.map(t=>{
     const hasData = !!state.payloadData[payloadKey(cat, t.id)];
     const sel = payloadSelectedTeamId===t.id ? 'selected' : '';
     return '<option value="' + t.id + '" ' + sel + '>' + escapeHtml(t.name) + (hasData?' ✓':'') + '</option>';
@@ -1461,8 +1495,8 @@ function renderPayloadUI(){
 
   return '<div class="info-note">Rekod Payung Terjun Berbeban (40%): masa terlama di udara (25%), keadaan fizikal beban (8%), zon pendaratan (7%). Setiap pasukan ada 2 kali pelancaran — rekod masa terpanjang akan digunakan.</div>' +
     '<div class="section-title">Pilih Sekolah</div>' +
-    (state.teams.length===0
-      ? '<div class="empty-state">Belum ada sekolah didaftarkan.</div>'
+    (catTeams.length===0
+      ? '<div class="empty-state">Belum ada sekolah didaftarkan untuk kategori ini.</div>'
       : '<select class="team-select" id="payload-team-select"><option value="">— Pilih sekolah —</option>' + teamOptions + '</select>') +
     '<div id="payload-entry-area"></div>' +
     rankTable;
